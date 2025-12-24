@@ -52,14 +52,15 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    // REMOVED overflow-hidden, added mb-14 for bottom spacing
-    <div className="w-full bg-black pt-2 mb-14">
+    // Use padding-bottom instead of margin-bottom
+    <div className="w-full bg-black pt-2 pb-14">
       
-      {/* 1. 16:9 Scroll Area - overflow-hidden moved here */}
+      {/* 1. 16:9 Scroll Area */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        style={{ overflowY: 'visible' }}
       >
         {videos.map((video) => (
           <div key={video.id} className="min-w-full snap-center px-4">
@@ -81,8 +82,8 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots - mt-6 for spacing from slider */}
-      <div className="flex justify-center items-center gap-4 mt-6">
+      {/* 2. Navigation Dots */}
+      <div className="flex justify-center items-center gap-4 pt-14">
         {videos.map((_, index) => (
           <button
             key={index}
