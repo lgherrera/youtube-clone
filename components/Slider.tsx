@@ -57,8 +57,10 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* We use pb-8 and mb-4 to ensure a clear gap before the ThumbCards start */
-    <div className="w-full bg-black pt-2 pb-8 mb-4 border-b border-white/5">
+    /* Main wrapper with mb-8 to create the space between dots and main feed */
+    <div className="w-full bg-black pt-2 mb-8">
+      
+      {/* 1. Thumbnail Scroll Area */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -73,6 +75,7 @@ export default function Slider({ videos }: SliderProps) {
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />
+                {/* Visual "Destacado" badge from reference */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-5">
                   <div className="flex items-center gap-2">
                     <span className="bg-pink-600 text-[10px] text-white font-bold px-2 py-0.5 rounded-sm uppercase">
@@ -86,19 +89,18 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* Navigation Dots - Explicit h/w for circular shape */}
-      <div className="flex justify-center items-center gap-3 mt-6">
+      {/* 2. Navigation Dots - Separated with mt-8 to create space from thumbnail */}
+      <div className="flex justify-center items-center gap-3 mt-8">
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            /* Forced 8px by 8px for perfect circles */
-            className={`transition-all duration-300 rounded-full`}
-            style={{ 
-              width: '8px', 
-              height: '8px', 
-              backgroundColor: activeIndex === index ? 'white' : '#3f3f46' 
-            }}
+            /* Forced h-2 w-2 with flex-none prevents the "dash" stretching */
+            className={`flex-none h-2 w-2 rounded-full transition-all duration-300 ${
+              activeIndex === index 
+                ? 'bg-white scale-125' 
+                : 'bg-zinc-700'
+            }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
