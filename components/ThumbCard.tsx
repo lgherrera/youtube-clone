@@ -1,57 +1,53 @@
-import Link from 'next/link';
+"use client";
 
-interface ThumbCardProps {
+import Link from "next/link";
+
+interface Video {
   id: string;
+  thumbnail_url: string;
   title: string;
-  thumbnail: string;
-  // We must receive both ID and Name
-  categories?: { id: string; name: string }[];
+  categories: string[];
 }
 
-export default function ThumbCard({ 
-  id, 
-  title, 
-  thumbnail, 
-  categories 
-}: ThumbCardProps) {
-  return (
-    <div className="w-full bg-[#211d1d] overflow-hidden border-b border-zinc-800/50 relative">
-      {/* 1. Main Video Link (Wraps only the image and title) */}
-      <Link href={`/video/${id}`} className="block group no-underline">
-        <div className="relative aspect-[16/9] w-full bg-[#1a1a1a]">
-          <img 
-            src={thumbnail} 
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        </div>
+interface ThumbCardProps {
+  video: Video;
+}
 
-        <div className="p-4 pb-1">
-          <h3 
-            className="text-[17px] font-bold leading-tight mb-2 transition-opacity group-hover:opacity-70"
-            style={{ color: 'white' }}
-          >
-            {title}
-          </h3>
+export default function ThumbCard({ video }: ThumbCardProps) {
+  return (
+    <div className="flex flex-col w-full bg-black">
+      {/* 1. Thumbnail Area with 16:9 Aspect Ratio */}
+      <Link href={`/video/${video.id}`} className="block relative px-4">
+        <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden border border-white/5">
+          <img 
+            src={video.thumbnail_url} 
+            alt={video.title}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+          />
         </div>
       </Link>
 
-      {/* 2. Independent Category Links (Must be outside the main Link tag) */}
-      <div className="px-4 pb-4 flex flex-wrap items-center gap-x-2 gap-y-1 relative z-10">
-        {categories?.map((cat, index) => (
-          <Link 
-            key={index} 
-            href={`/category/${cat.id}`} 
-            className="no-underline hover:opacity-60 transition-opacity"
-          >
+      {/* 2. Text Content with 24px Padding (p-6) */}
+      <div className="p-6 flex flex-col gap-1.5">
+        
+        {/* Video Title - Bold and High Contrast */}
+        <Link href={`/video/${video.id}`}>
+          <h3 className="text-zinc-100 font-bold text-base leading-tight line-clamp-2 active:text-pink-500 transition-colors">
+            {video.title}
+          </h3>
+        </Link>
+
+        {/* Categories - Lowercase and Subtle */}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+          {video.categories && video.categories.map((cat, index) => (
             <span 
-              className="text-[11px] font-bold uppercase tracking-tighter inline-block py-1"
-              style={{ color: 'white' }} 
+              key={`${video.id}-${index}`} 
+              className="text-zinc-500 text-xs lowercase font-medium"
             >
-              • {cat.name}
+              {cat}
             </span>
-          </Link>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
