@@ -52,7 +52,8 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    <div className="w-full bg-black pt-2 mb-12">
+    // Changed mb-12 to mb-20 for more space (5rem / 80px)
+    <div className="w-full bg-black pt-2 mb-20">
       
       {/* Slider Container */}
       <div 
