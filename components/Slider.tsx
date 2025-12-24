@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
@@ -41,7 +40,6 @@ export default function Slider({ videos }: SliderProps) {
       const cardWidth = container.offsetWidth;
       const currentScroll = container.scrollLeft;
       const maxScroll = container.scrollWidth - container.clientWidth;
-
       if (currentScroll >= maxScroll - 10) {
         container.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
@@ -54,14 +52,14 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* mb-14 creates a large, clean gap before the main feed starts */
-    <div className="w-full bg-black pt-2 mb-14 overflow-hidden">
+    // REMOVED overflow-hidden, added mb-14 for bottom spacing
+    <div className="w-full bg-black pt-2 mb-14">
       
-      {/* 1. 16:9 Scroll Area */}
+      {/* 1. 16:9 Scroll Area - overflow-hidden moved here */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
       >
         {videos.map((video) => (
           <div key={video.id} className="min-w-full snap-center px-4">
@@ -83,8 +81,8 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots - mt-14 provides the requested space below the thumbnails */}
-      <div className="flex justify-center items-center gap-4 mt-14">
+      {/* 2. Navigation Dots - mt-6 for spacing from slider */}
+      <div className="flex justify-center items-center gap-4 mt-6">
         {videos.map((_, index) => (
           <button
             key={index}
