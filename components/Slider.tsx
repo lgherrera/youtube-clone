@@ -56,9 +56,10 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* 1. Explicit margin-bottom (mb-[40px]) to separate dots from the main feed */
-    <div className="w-full bg-black pt-2 mb-[40px] block">
+    /* mb-10 ensures a generous, equal gap between dots and the main feed */
+    <div className="w-full bg-black pt-2 mb-10 block">
       
+      {/* 1. Standardized 16:9 Slider Thumbnails */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -67,6 +68,7 @@ export default function Slider({ videos }: SliderProps) {
         {videos.map((video) => (
           <div key={video.id} className="min-w-[90%] snap-center flex-shrink-0">
             <Link href={`/video/${video.id}`} className="block relative group">
+              {/* aspect-video (16:9) matches your ThumbCards perfectly */}
               <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
                 <img 
                   src={video.slider_url || video.thumbnail_url} 
@@ -86,24 +88,18 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots - Forced dimensions and spacing */}
-      <div className="flex justify-center items-center gap-4 mt-[32px] w-full">
+      {/* 2. Navigation Dots - Forced circle shape and wider spacing */}
+      <div className="flex justify-center items-center gap-5 mt-10">
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            /* 3. Inline styles to prevent CSS 'dash' stretching and force circular shape */
-            style={{ 
-              width: '10px', 
-              height: '10px', 
-              minWidth: '10px', 
-              minHeight: '10px',
-              borderRadius: '9999px',
-              backgroundColor: activeIndex === index ? 'white' : '#52525b',
-              border: 'none',
-              padding: 0,
-              display: 'block'
-            }}
+            /* flex-none and aspect-square prevents stretching into dashes */
+            className={`flex-none w-2.5 h-2.5 aspect-square rounded-full transition-all duration-300 ${
+              activeIndex === index 
+                ? 'bg-white scale-125' 
+                : 'bg-zinc-700'
+            }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
