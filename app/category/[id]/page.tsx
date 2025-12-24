@@ -1,77 +1,63 @@
-import { supabase } from '@/lib/supabase';
-import ThumbCard from '@/components/ThumbCard';
+import { supabase } from "@/lib/supabase";
+import ThumbCard from "@/components/ThumbCard";
+import Header from "@/components/Header";
+import { notFound } from "next/navigation";
 
-export default async function CategoryFilterPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  // 1. Await params for Next.js 15+ compatibility
-  const { id } = await params;
+interface CategoryPageProps {
+  params: {
+    id: string;
+  };
+}
 
-  // 2. Fetch the current category name for the header
-  const { data: categoryData } = await supabase
-    .from('categories')
-    .select('name')
-    .eq('id', id)
-    .single();
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { id } = params;
 
-  // 3. Fetch videos linked to this ID via the junction table
-  const { data: videoLinks, error } = await supabase
-    .from('video_categories')
-    .select(`
-      videos!inner (
-        id,
-        title,
-        thumbnail_url,
-        video_categories (
-          categories (
-            id,
-            name
-          )
-        )
-      )
-    `)
-    .eq('category_id', id);
+  // 1. Fetch videos filtered by the specific category
+  // We fetch the full row to provide the complete video object to ThumbCard
+  const { data: videos, error } = await supabase
+    .from("videos")
+    .select("*")
+    .contains("categories", [id])
+    .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error('Supabase Error:', error.message);
-    return <div className="p-4 text-white">Error loading videos for this category.</div>;
+  if (error || !videos) {
+    console.error("Error fetching category videos:", error);
+    return notFound();
   }
 
-  // 4. Flatten the nested Supabase response
-  const videos = videoLinks
-    ?.map((link: any) => link.videos)
-    .filter((v: any) => v !== null) || [];
-
   return (
-    <main className="flex flex-col bg-black min-h-screen">
-      {/* Dynamic Header showing the Category Name */}
-      <div className="p-4 border-b border-zinc-900 bg-[#141414]">
-        <h1 className="text-xl font-black text-white uppercase italic tracking-tighter">
-          Explorando: {categoryData?.name || 'Categoría'}
+    <main className="min-h-screen bg-black text-white">
+      <Header />
+
+      {/* 2. Category Title Header */}
+      <div className="px-6 py-8">
+        <h1 className="text-2xl font-bold capitalize">
+          {id.replace(/-/g, ' ')}
         </h1>
+        <p className="text-zinc-500 text-sm mt-1">
+          {videos.length} {videos.length === 1 ? 'video' : 'videos'} encontrados
+        </p>
       </div>
 
-      {/* Filtered Video Feed */}
-      <div className="flex flex-col">
-        {videos.length > 0 ? (
-          videos.map((video: any) => (
-            <ThumbCard 
-              key={video.id}
-              id={video.id}
-              title={video.title}
-              thumbnail={video.thumbnail_url}
-              // Pass IDs so users can click other tags within this view
-              categories={video.video_categories?.map((vc: any) => vc.categories)}
-            />
-          ))
-        ) : (
-          <div className="p-12 text-center text-zinc-600 uppercase text-xs font-bold tracking-widest">
-            No hay videos disponibles
-          </div>
-        )}
+      {/* 3. Responsive Video Grid */}
+      <div className="flex flex-col gap-2">
+        {videos.map((video) => (
+          /* FIX: We pass the entire 'video' object instead of individual props.
+             This satisfies the ThumbCardProps interface and fixes the build error.
+            
+          */
+          <ThumbCard 
+            key={video.id} 
+            video={video} 
+          />
+        ))}
       </div>
+
+      {videos.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <p className="text-zinc-500">No hay videos en esta categoría todavía.</p>
+        </div>
+      )}
     </main>
   );
 }

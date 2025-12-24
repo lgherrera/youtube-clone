@@ -1,63 +1,64 @@
-import { supabase } from '@/lib/supabase';
-import ThumbCard from '@/components/ThumbCard';
-import Slider from '@/components/Slider';
+import { supabase } from "@/lib/supabase";
+import Slider from "@/components/Slider";
+import ThumbCard from "@/components/ThumbCard";
 
 export default async function Home() {
-  // 1. Fetch the 4 most recent videos for the Slider
-  // We include thumbnail_url to fix the TypeScript 'Property missing' error
-  const { data: sliderVideos, error: sliderError } = await supabase
-    .from('videos')
-    .select('id, title, slider_url, thumbnail_url')
-    .order('created_at', { ascending: false })
-    .limit(4);
-
-  // 2. Fetch the standard feed with full category joins
-  const { data: videos, error: feedError } = await supabase
-    .from('videos')
-    .select(`
-      id, 
-      title, 
-      thumbnail_url,
-      video_categories (
-        categories (
-          id, 
-          name
+  // Parallel queries with category joins
+  const [{ data: recentVideos }, { data: allVideos }] = await Promise.all([
+    // Get the last 4 videos for the slider
+    supabase
+      .from("videos")
+      .select(`
+        id,
+        title,
+        thumbnail_url,
+        slider_url,
+        created_at,
+        video_categories(
+          categories(name)
         )
-      )
-    `)
-    .order('created_at', { ascending: false });
+      `)
+      .order("created_at", { ascending: false })
+      .limit(4),
+    // Get all videos for the feed
+    supabase
+      .from("videos")
+      .select(`
+        id,
+        title,
+        thumbnail_url,
+        created_at,
+        video_categories(
+          categories(name)
+        )
+      `)
+      .order("created_at", { ascending: false })
+  ]);
 
-  // Handle potential database connection errors
-  if (sliderError || feedError) {
-    console.error('Database Error:', sliderError || feedError);
-    return (
-      <div className="p-10 text-white bg-black min-h-screen text-center uppercase text-xs font-bold tracking-widest">
-        Error al cargar contenido
-      </div>
-    );
-  }
+  // Transform the data to flatten categories
+  const transformVideos = (videos: any[] | null) => {
+    return videos?.map(video => ({
+      ...video,
+      categories: video.video_categories?.map((vc: any) => vc.categories?.name).filter(Boolean) || []
+    }));
+  };
+
+  const transformedSlider = transformVideos(recentVideos);
+  const transformedAll = transformVideos(allVideos);
 
   return (
-    <main className="flex flex-col bg-black min-h-screen">
-      {/* 3. The Auto-Scrolling Slider (16:9) */}
-      {sliderVideos && sliderVideos.length > 0 && (
-        <Slider videos={sliderVideos as any} />
+    <div className="min-h-screen bg-black">
+      {/* Slider with last 4 videos */}
+      {transformedSlider && transformedSlider.length > 0 && (
+        <Slider videos={transformedSlider} />
       )}
 
-      {/* 4. The Main Video Feed */}
-      <div className="flex flex-col">
-        {videos?.map((video) => (
-          <div key={video.id}>
-            <ThumbCard 
-              id={video.id}
-              title={video.title}
-              thumbnail={video.thumbnail_url}
-              // Map the junction table to provide the ID and Name for clickable tags
-              categories={video.video_categories?.map((vc: any) => vc.categories)}
-            />
-          </div>
+      {/* Video Feed */}
+      <section className="flex flex-col w-full pb-20">
+        {transformedAll?.map((video) => (
+          <ThumbCard key={video.id} video={video} />
         ))}
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }
