@@ -39,7 +39,6 @@ export default function Slider({ videos }: SliderProps) {
     const interval = setInterval(() => {
       const container = scrollRef.current;
       if (!container) return;
-
       const cardWidth = container.offsetWidth * 0.9;
       const currentScroll = container.scrollLeft;
       const maxScroll = container.scrollWidth - container.clientWidth;
@@ -57,17 +56,16 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* Main wrapper with mb-8 to create the space between dots and main feed */
-    <div className="w-full bg-black pt-2 mb-8">
+    /* 1. Explicit margin-bottom (mb-[40px]) to separate dots from the main feed */
+    <div className="w-full bg-black pt-2 mb-[40px] block">
       
-      {/* 1. Thumbnail Scroll Area */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-3 px-4"
       >
         {videos.map((video) => (
-          <div key={video.id} className="min-w-[90%] snap-center">
+          <div key={video.id} className="min-w-[90%] snap-center flex-shrink-0">
             <Link href={`/video/${video.id}`} className="block relative group">
               <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
                 <img 
@@ -75,7 +73,6 @@ export default function Slider({ videos }: SliderProps) {
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />
-                {/* Visual "Destacado" badge from reference */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-5">
                   <div className="flex items-center gap-2">
                     <span className="bg-pink-600 text-[10px] text-white font-bold px-2 py-0.5 rounded-sm uppercase">
@@ -89,18 +86,24 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots - Separated with mt-8 to create space from thumbnail */}
-      <div className="flex justify-center items-center gap-3 mt-8">
+      {/* 2. Navigation Dots - Forced dimensions and spacing */}
+      <div className="flex justify-center items-center gap-4 mt-[32px] w-full">
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            /* Forced h-2 w-2 with flex-none prevents the "dash" stretching */
-            className={`flex-none h-2 w-2 rounded-full transition-all duration-300 ${
-              activeIndex === index 
-                ? 'bg-white scale-125' 
-                : 'bg-zinc-700'
-            }`}
+            /* 3. Inline styles to prevent CSS 'dash' stretching and force circular shape */
+            style={{ 
+              width: '10px', 
+              height: '10px', 
+              minWidth: '10px', 
+              minHeight: '10px',
+              borderRadius: '9999px',
+              backgroundColor: activeIndex === index ? 'white' : '#52525b',
+              border: 'none',
+              padding: 0,
+              display: 'block'
+            }}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
