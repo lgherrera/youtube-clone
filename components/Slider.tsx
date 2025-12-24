@@ -54,10 +54,10 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* Added mb-10 for equal spacing between dots and feed */
-    <div className="w-full bg-black pt-2 mb-10 overflow-hidden">
+    /* mb-14 creates a large, clean gap before the main feed starts */
+    <div className="w-full bg-black pt-2 mb-14 overflow-hidden">
       
-      {/* 1. 16:9 Scroll Container - Using full width to match feed thumbnails */}
+      {/* 1. 16:9 Scroll Area */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -66,7 +66,6 @@ export default function Slider({ videos }: SliderProps) {
         {videos.map((video) => (
           <div key={video.id} className="min-w-full snap-center px-4">
             <Link href={`/video/${video.id}`} className="block relative">
-              {/* aspect-video matches the main feed perfectly */}
               <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
                 <img 
                   src={video.slider_url || video.thumbnail_url} 
@@ -84,13 +83,12 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots - mt-10 matches mb-10 for symmetry */}
-      <div className="flex justify-center items-center gap-4 mt-10">
+      {/* 2. Navigation Dots - mt-14 provides the requested space below the thumbnails */}
+      <div className="flex justify-center items-center gap-4 mt-14">
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            /* Using inline-style to absolutely override 'dash' stretching */
             style={{ 
               width: '10px', 
               height: '10px', 
