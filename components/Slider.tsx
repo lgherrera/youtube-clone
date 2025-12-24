@@ -16,7 +16,6 @@ export default function Slider({ videos }: SliderProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // 1. Function to handle manual dot clicks
   const scrollToVideo = (index: number) => {
     if (!scrollRef.current) return;
     const cardWidth = scrollRef.current.offsetWidth * 0.9;
@@ -26,7 +25,6 @@ export default function Slider({ videos }: SliderProps) {
     });
   };
 
-  // 2. Listener to update dots on scroll
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const scrollLeft = scrollRef.current.scrollLeft;
@@ -59,10 +57,11 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    <div className="w-full bg-black pb-2 pt-2">
+    /* Added mb-6 to create space between slider and ThumbCards */
+    <div className="w-full bg-black pt-2 mb-6">
       <div 
         ref={scrollRef}
-        onScroll={handleScroll} // Detects scroll position
+        onScroll={handleScroll}
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-3 px-4"
       >
         {videos.map((video) => (
@@ -72,9 +71,8 @@ export default function Slider({ videos }: SliderProps) {
                 <img 
                   src={video.slider_url || video.thumbnail_url} 
                   alt={video.title}
-                  className="w-full h-full object-cover transition-transform duration-700"
+                  className="w-full h-full object-cover"
                 />
-                
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-5">
                   <div className="flex items-center gap-2">
                     <span className="bg-pink-600 text-[10px] text-white font-bold px-2 py-0.5 rounded-sm uppercase">
@@ -88,16 +86,17 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 3. Navigation Dots */}
-      <div className="flex justify-center items-center gap-2 mt-4 pb-2">
+      {/* Navigation Dots - Updated for circular shape */}
+      <div className="flex justify-center items-center gap-3 mt-4">
         {videos.map((_, index) => (
           <button
             key={index}
-            onClick={() => scrollToVideo(index)} // Jump to video
+            onClick={() => scrollToVideo(index)}
+            /* Using h-2 w-2 and rounded-full ensures a perfect circle */
             className={`transition-all duration-300 rounded-full ${
               activeIndex === index 
-                ? 'w-2 h-2 bg-white' // Active dot
-                : 'w-1.5 h-1.5 bg-zinc-600' // Inactive dots
+                ? 'h-2 w-2 bg-white scale-110' 
+                : 'h-2 w-2 bg-zinc-700'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
