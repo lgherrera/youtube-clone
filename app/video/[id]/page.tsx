@@ -46,10 +46,16 @@ export default async function VideoPage({
     .in('category_id', categoryIds)
     .limit(10);
 
-  // Filter out the current video from the list
+  // Filter out the current video and transform for ThumbCard
   const relatedVideos = relatedData
     ?.map((link: any) => link.videos)
-    .filter((v: any) => v && v.id !== id) || [];
+    .filter((v: any) => v && v.id !== id)
+    .map((rv: any) => ({
+      id: rv.id,
+      title: rv.title,
+      thumbnail_url: rv.thumbnail_url,
+      categories: rv.video_categories?.map((vc: any) => vc.categories?.name).filter(Boolean) || []
+    })) || [];
 
   return (
     <main className="flex flex-col bg-black min-h-screen">
@@ -76,10 +82,10 @@ export default async function VideoPage({
             <span key={vc.categories.id} className="flex items-center">
               <Link href={`/category/${vc.categories.id}`} className="no-underline">
                 <span 
-                  className="text-sm font-medium"
+                  className="text-sm font-medium capitalize"
                   style={{ color: 'white' }}
                 >
-                  {vc.categories.name.toLowerCase()}
+                  {vc.categories.name}
                 </span>
               </Link>
               {index < (video.video_categories.length - 1) && (
@@ -110,13 +116,10 @@ export default async function VideoPage({
         </div>
         
         <div className="flex flex-col">
-          {relatedVideos.map((rv: any) => (
+          {relatedVideos.map((video) => (
             <ThumbCard 
-              key={rv.id}
-              id={rv.id}
-              title={rv.title}
-              thumbnail={rv.thumbnail_url}
-              categories={rv.video_categories?.map((vc: any) => vc.categories)}
+              key={video.id}
+              video={video}
             />
           ))}
         </div>
