@@ -52,10 +52,9 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    // mb-12 creates space before the video feed
     <div className="w-full bg-black pt-2 mb-12">
       
-      {/* 1. 16:9 Scroll Area */}
+      {/* Slider Container */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -71,18 +70,13 @@ export default function Slider({ videos }: SliderProps) {
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex flex-col justify-end p-5">
-                   <span className="bg-pink-600 text-[10px] text-white font-bold px-2 py-0.5 rounded-sm uppercase w-fit">
-                      Destacado
-                   </span>
-                </div>
               </div>
             </Link>
           </div>
         ))}
       </div>
 
-      {/* 2. Navigation Dots - pt-6 creates reasonable space from slider */}
+      {/* Navigation Dots */}
       <div className="flex justify-center items-center gap-4 pt-6">
         {videos.map((_, index) => (
           <button
