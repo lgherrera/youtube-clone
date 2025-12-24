@@ -52,8 +52,8 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    // Use padding-bottom instead of margin-bottom
-    <div className="w-full bg-black pt-2 pb-14">
+    // mb-12 creates space before the video feed
+    <div className="w-full bg-black pt-2 mb-12">
       
       {/* 1. 16:9 Scroll Area */}
       <div 
@@ -82,8 +82,8 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* 2. Navigation Dots */}
-      <div className="flex justify-center items-center gap-4 pt-14">
+      {/* 2. Navigation Dots - pt-6 creates reasonable space from slider */}
+      <div className="flex justify-center items-center gap-4 pt-6">
         {videos.map((_, index) => (
           <button
             key={index}
