@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
@@ -40,6 +41,7 @@ export default function Slider({ videos }: SliderProps) {
       const cardWidth = container.offsetWidth;
       const currentScroll = container.scrollLeft;
       const maxScroll = container.scrollWidth - container.clientWidth;
+
       if (currentScroll >= maxScroll - 10) {
         container.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
@@ -52,33 +54,34 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    // Changed mb-12 to mb-20 for more space (5rem / 80px)
-    <div className="w-full bg-black pt-2 mb-20">
+    <div className="w-full bg-black pt-2 pb-14 block">
       
-      {/* Slider Container */}
+      {/* 1. Slider Scroll Container (16:9) */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-        style={{ overflowY: 'visible' }}
       >
         {videos.map((video) => (
           <div key={video.id} className="min-w-full snap-center px-4">
-            <Link href={`/video/${video.id}`} className="block relative">
+            <Link href={`/video/${video.id}`} className="block relative group">
               <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
                 <img 
                   src={video.slider_url || video.thumbnail_url} 
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />
+                {/* REMOVED: The "Destacado" span and the dark gradient 
+                  to provide the cleanest possible look 
+                */}
               </div>
             </Link>
           </div>
         ))}
       </div>
 
-      {/* Navigation Dots */}
-      <div className="flex justify-center items-center gap-4 pt-6">
+      {/* 2. Navigation Dots */}
+      <div className="flex justify-center items-center gap-5 py-14">
         {videos.map((_, index) => (
           <button
             key={index}
@@ -87,10 +90,11 @@ export default function Slider({ videos }: SliderProps) {
               width: '10px', 
               height: '10px', 
               borderRadius: '50%', 
-              backgroundColor: activeIndex === index ? 'white' : '#52525b',
+              backgroundColor: activeIndex === index ? 'white' : '#3f3f46',
               flexShrink: 0,
               border: 'none',
-              padding: 0
+              padding: 0,
+              display: 'block'
             }}
             aria-label={`Go to slide ${index + 1}`}
           />
