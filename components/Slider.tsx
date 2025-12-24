@@ -57,8 +57,8 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    /* Added mb-6 to create space between slider and ThumbCards */
-    <div className="w-full bg-black pt-2 mb-6">
+    /* We use pb-8 and mb-4 to ensure a clear gap before the ThumbCards start */
+    <div className="w-full bg-black pt-2 pb-8 mb-4 border-b border-white/5">
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -86,18 +86,19 @@ export default function Slider({ videos }: SliderProps) {
         ))}
       </div>
 
-      {/* Navigation Dots - Updated for circular shape */}
-      <div className="flex justify-center items-center gap-3 mt-4">
+      {/* Navigation Dots - Explicit h/w for circular shape */}
+      <div className="flex justify-center items-center gap-3 mt-6">
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            /* Using h-2 w-2 and rounded-full ensures a perfect circle */
-            className={`transition-all duration-300 rounded-full ${
-              activeIndex === index 
-                ? 'h-2 w-2 bg-white scale-110' 
-                : 'h-2 w-2 bg-zinc-700'
-            }`}
+            /* Forced 8px by 8px for perfect circles */
+            className={`transition-all duration-300 rounded-full`}
+            style={{ 
+              width: '8px', 
+              height: '8px', 
+              backgroundColor: activeIndex === index ? 'white' : '#3f3f46' 
+            }}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
