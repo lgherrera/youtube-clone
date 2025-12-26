@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import ThumbCard from '@/components/ThumbCard';
+import GFBanner from '@/components/GFBanner';
 import Link from 'next/link';
 
 export default async function VideoPage({
@@ -97,15 +98,11 @@ export default async function VideoPage({
       </div>
 
       {/* Banner Section */}
-      <div className="w-full py-4 bg-black">
-        <Link href="#" className="block">
-          <img 
-            src="https://awmewvzgyaylxmxsptcz.supabase.co/storage/v1/object/public/banners/maya.jpg" 
-            alt="Publicidad" 
-            className="w-full h-auto object-contain"
-          />
-        </Link>
-      </div>
+      <GFBanner 
+        imageUrl="https://awmewvzgyaylxmxsptcz.supabase.co/storage/v1/object/public/banners/ai_girlfriend_banner.jpg"
+        alt="AI Girlfriend Banner"
+        href="https://charlare.co"
+      />
 
       {/* Related Videos Section */}
       <div className="flex flex-col bg-black pb-10">
