@@ -10,8 +10,8 @@
   .headingContainer {
     padding-left: 0; /* No left padding - aligns with thumbnail image */
     padding-right: 24px;
-    padding-top: 16px; /* Reduced from 18px */
-    padding-bottom: 12px; /* Reduced from 14px */
+    padding-top: 10px; /* Reduced from 12px */
+    padding-bottom: 10px; /* Same spacing top and bottom */
   }
   
   .heading {
