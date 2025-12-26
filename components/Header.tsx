@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="h-[65px] w-full flex items-center justify-between px-4 sticky top-0 bg-black z-[100] border-b border-zinc-900">
+    <header className="h-[65px] w-full flex items-center justify-between px-4 sticky top-0 bg-black z-[100]">
       
       {/* 1. Left: Hamburger Menu */}
       <div className="flex-1 flex justify-start">

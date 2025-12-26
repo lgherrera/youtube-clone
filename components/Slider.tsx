@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import styles from './Slider.module.css';
 
 interface SliderProps {
   videos: {
@@ -54,48 +55,35 @@ export default function Slider({ videos }: SliderProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    <div className="w-full bg-black pt-2 pb-14 block">
-      
-      {/* 1. Slider Scroll Container (16:9) */}
+    <div className={styles.sliderWrapper}>
+      {/* Slider Scroll Container */}
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        className={styles.scrollContainer}
       >
         {videos.map((video) => (
-          <div key={video.id} className="min-w-full snap-center px-4">
-            <Link href={`/video/${video.id}`} className="block relative group">
-              <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
+          <div key={video.id} className={styles.slideItem}>
+            <Link href={`/video/${video.id}`} className={styles.thumbnailLink}>
+              <div className={styles.thumbnailContainer}>
                 <img 
                   src={video.slider_url || video.thumbnail_url} 
                   alt={video.title}
-                  className="w-full h-full object-cover"
+                  className={styles.thumbnail}
                 />
-                {/* REMOVED: The "Destacado" span and the dark gradient 
-                  to provide the cleanest possible look 
-                */}
               </div>
             </Link>
           </div>
         ))}
       </div>
 
-      {/* 2. Navigation Dots */}
-      <div className="flex justify-center items-center gap-5 py-14">
+      {/* Navigation Dots */}
+      <div className={styles.dotsContainer}>
         {videos.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToVideo(index)}
-            style={{ 
-              width: '10px', 
-              height: '10px', 
-              borderRadius: '50%', 
-              backgroundColor: activeIndex === index ? 'white' : '#3f3f46',
-              flexShrink: 0,
-              border: 'none',
-              padding: 0,
-              display: 'block'
-            }}
+            className={`${styles.dot} ${activeIndex === index ? styles.dotActive : styles.dotInactive}`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
