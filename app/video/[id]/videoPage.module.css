@@ -1,0 +1,76 @@
+/* videoPage.module.css */
+
+.infoSection {
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: 4px;
+  padding-bottom: 16px;
+  background-color: #211d1d;
+}
+
+.title {
+  color: white;
+  font-weight: normal;
+  font-size: 1.125rem; /* 18px - matches ThumbCard */
+  line-height: 1.2;
+  margin-bottom: 8px; /* Add space between title and categories */
+}
+
+.categoryContainer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0; /* Remove negative margin to prevent overlap */
+}
+
+.categories {
+  color: #a1a1aa; /* matches ThumbCard exact color */
+  font-size: 1rem; /* 16px - matches ThumbCard */
+  text-transform: capitalize;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 1;
+}
+
+.categoryItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.categoryLink {
+  text-decoration: none;
+  color: #a1a1aa;
+  transition: color 0.2s;
+}
+
+.categoryLink:hover {
+  color: #d4d4d8;
+}
+
+.category {
+  color: inherit;
+  text-transform: capitalize;
+}
+
+.comma {
+  color: #a1a1aa;
+}
+
+.heartButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px; /* Space between heart and first category */
+}
+
+.heartIcon {
+  width: 20px; /* exact 20px */
+  height: 20px; /* exact 20px */
+  display: inline-block;
+  vertical-align: middle;
+}

@@ -1,5 +1,5 @@
-// components/GFBanner.tsx
 import Link from 'next/link';
+import styles from './GFBanner.module.css';
 
 interface GFBannerProps {
   imageUrl: string;
@@ -15,13 +15,13 @@ export default function GFBanner({
   className = ""
 }: GFBannerProps) {
   return (
-    <div className={`w-full py-4 bg-black px-4 ${className}`}>
-      <Link href={href} className="block">
-        <div className="border-2 border-white/60 rounded-sm overflow-hidden">
+    <div className={`${styles.bannerContainer} ${className}`}>
+      <Link href={href}>
+        <div className={styles.bannerWrapper}>
           <img 
             src={imageUrl} 
             alt={alt} 
-            className="w-full h-auto object-contain"
+            className={styles.bannerImage}
           />
         </div>
       </Link>

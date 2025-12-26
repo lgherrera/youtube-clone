@@ -1,0 +1,19 @@
+/* components/GFBanner.module.css */
+.bannerContainer {
+  width: 100%;
+  padding: 1rem 0;
+  background-color: black;
+}
+
+.bannerWrapper {
+  border: 16px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  display: block;
+}
+
+.bannerImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}

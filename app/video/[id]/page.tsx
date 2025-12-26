@@ -1,7 +1,11 @@
+//app/video/[id]/page.tsx
 import { supabase } from '@/lib/supabase';
 import ThumbCard from '@/components/ThumbCard';
 import GFBanner from '@/components/GFBanner';
 import Link from 'next/link';
+import Image from 'next/image';
+import styles from './videoPage.module.css';
+import relatedStyles from './relatedVideos.module.css';
 
 export default async function VideoPage({
   params,
@@ -71,29 +75,39 @@ export default async function VideoPage({
       </div>
 
       {/* Info Section (#211d1d) */}
-      <div className="p-4 bg-[#211d1d]">
-        <h1 className="text-2xl font-bold text-white leading-tight mb-4">
+      <div className={styles.infoSection}>
+        {/* Title - matching ThumbCard exact styling */}
+        <h1 className={styles.title}>
           {video.title}
         </h1>
         
-        <div className="w-full h-[1px] bg-white/10 mb-4" />
+        {/* Categories and Heart Icon Container - matching ThumbCard */}
+        <div className={styles.categoryContainer}>
+          {/* Heart Icon - positioned to the LEFT */}
+          <button className={styles.heartButton}>
+            <Image
+              src="/heart.svg"
+              alt="Like"
+              width={20}
+              height={20}
+              className={styles.heartIcon}
+            />
+          </button>
 
-        <div className="flex flex-wrap items-center">
-          {video.video_categories?.map((vc: any, index: number) => (
-            <span key={vc.categories.id} className="flex items-center">
-              <Link href={`/category/${vc.categories.id}`} className="no-underline">
-                <span 
-                  className="text-sm font-medium capitalize"
-                  style={{ color: 'white' }}
-                >
-                  {vc.categories.name}
-                </span>
-              </Link>
-              {index < (video.video_categories.length - 1) && (
-                <span className="text-white mr-1.5">,</span>
-              )}
-            </span>
-          ))}
+          <div className={styles.categories}>
+            {video.video_categories?.map((vc: any, index: number) => (
+              <div key={vc.categories.id} className={styles.categoryItem}>
+                <Link href={`/category/${vc.categories.id}`} className={styles.categoryLink}>
+                  <span className={styles.category}>
+                    {vc.categories.name}
+                  </span>
+                </Link>
+                {index < (video.video_categories.length - 1) && (
+                  <span className={styles.comma}>, </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -105,14 +119,14 @@ export default async function VideoPage({
       />
 
       {/* Related Videos Section */}
-      <div className="flex flex-col bg-black pb-10">
-        <div className="px-4 py-2">
-          <h2 className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] italic">
+      <div className={relatedStyles.section}>
+        <div className={relatedStyles.headingContainer}>
+          <h2 className={relatedStyles.heading}>
             Videos Relacionados
           </h2>
         </div>
         
-        <div className="flex flex-col">
+        <div className={relatedStyles.videosContainer}>
           {relatedVideos.map((video) => (
             <ThumbCard 
               key={video.id}

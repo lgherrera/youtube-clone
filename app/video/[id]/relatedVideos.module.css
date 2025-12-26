@@ -1,0 +1,29 @@
+/* relatedVideos.module.css */
+
+.section {
+    display: flex;
+    flex-direction: column;
+    background-color: black;
+    padding-bottom: 40px;
+  }
+  
+  .headingContainer {
+    padding-left: 0; /* No left padding - aligns with thumbnail image */
+    padding-right: 24px;
+    padding-top: 16px; /* Reduced from 18px */
+    padding-bottom: 12px; /* Reduced from 14px */
+  }
+  
+  .heading {
+    font-size: 20px; /* Video title is 18px (1.125rem), this is 2px larger */
+    font-weight: normal; /* Same as video title font-weight */
+    color: #71717a; /* zinc-500 */
+    text-transform: capitalize; /* UpperCase LowerCase instead of UPPERCASE */
+    letter-spacing: 0.2em;
+    font-style: normal; /* Not italic/cursive */
+  }
+  
+  .videosContainer {
+    display: flex;
+    flex-direction: column;
+  }
