@@ -1,63 +1,96 @@
-import { supabase } from "@/lib/supabase";
+// app/category/[id]/page.tsx
+
+import { supabase } from '@/lib/supabase';
 import ThumbCard from "@/components/ThumbCard";
-import Header from "@/components/Header";
-import { notFound } from "next/navigation";
+import styles from "./page.module.css";
 
-interface CategoryPageProps {
-  params: {
-    id: string;
-  };
-}
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { id } = params;
-
-  // 1. Fetch videos filtered by the specific category
-  // We fetch the full row to provide the complete video object to ThumbCard
-  const { data: videos, error } = await supabase
-    .from("videos")
+  // Try multiple lookup strategies
+  // 1. Direct ID or slug match
+  let { data: category } = await supabase
+    .from("categories")
     .select("*")
-    .contains("categories", [id])
-    .order("created_at", { ascending: false });
+    .or(`id.eq.${id},slug.eq.${id}`)
+    .single();
 
-  if (error || !videos) {
-    console.error("Error fetching category videos:", error);
-    return notFound();
+  // 2. If not found, try case-insensitive name match
+  if (!category) {
+    const nameToMatch = id.replace(/-/g, ' ');
+    const { data: categoryByName } = await supabase
+      .from("categories")
+      .select("*")
+      .ilike('name', nameToMatch)
+      .single();
+    
+    category = categoryByName;
   }
 
+  // 3. If still not found, try partial match
+  if (!category) {
+    const searchTerm = id.replace(/-/g, ' ');
+    const { data: categories } = await supabase
+      .from("categories")
+      .select("*")
+      .ilike('name', `%${searchTerm}%`)
+      .limit(1);
+    
+    if (categories && categories.length > 0) {
+      category = categories[0];
+    }
+  }
+
+  if (!category) {
+    return (
+      <div className={styles.container}>
+        <h1>Categoría no encontrada</h1>
+      </div>
+    );
+  }
+
+  // Fetch videos for this category
+  const { data: videoLinks } = await supabase
+    .from("video_categories")
+    .select(`
+      videos (
+        id,
+        title,
+        thumbnail_url,
+        created_at,
+        video_categories(
+          categories(name)
+        )
+      )
+    `)
+    .eq("category_id", category.id);
+
+  // Transform to match home page format
+  const videos = videoLinks
+    ?.map((link: any) => link.videos)
+    .filter((v: any) => v && v.id)
+    .map((video: any) => ({
+      ...video,
+      categories: video.video_categories?.map((vc: any) => vc.categories?.name).filter(Boolean) || []
+    })) || [];
+
   return (
-    <main className="min-h-screen bg-black text-white">
-      <Header />
-
-      {/* 2. Category Title Header */}
-      <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold capitalize">
-          {id.replace(/-/g, ' ')}
-        </h1>
-        <p className="text-zinc-500 text-sm mt-1">
-          {videos.length} {videos.length === 1 ? 'video' : 'videos'} encontrados
-        </p>
-      </div>
-
-      {/* 3. Responsive Video Grid */}
-      <div className="flex flex-col gap-2">
-        {videos.map((video) => (
-          /* FIX: We pass the entire 'video' object instead of individual props.
-             This satisfies the ThumbCardProps interface and fixes the build error.
-            
-          */
-          <ThumbCard 
-            key={video.id} 
-            video={video} 
-          />
-        ))}
-      </div>
-
-      {videos.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <p className="text-zinc-500">No hay videos en esta categoría todavía.</p>
+    <div className={styles.container}>
+      <h1 className={styles.title}>{category.name}</h1>
+      
+      {videos && videos.length > 0 ? (
+        <div className={styles.grid}>
+          {videos.map((video) => (
+            <ThumbCard key={video.id} video={video} />
+          ))}
         </div>
+      ) : (
+        <p className={styles.noVideos}>No hay videos en esta categoría.</p>
       )}
-    </main>
+    </div>
   );
 }

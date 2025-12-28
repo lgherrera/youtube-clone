@@ -1,0 +1,79 @@
+/* app/categories/Categories.module.css */
+
+.container {
+    background-color: #000;
+    color: #fff;
+  }
+  
+  .header {
+    padding-left: 0; /* No left padding - aligns with thumbnails */
+    padding-right: 1.5rem; /* 24px */
+    padding-top: 0.625rem; /* 10px */
+    padding-bottom: 0.625rem; /* 10px */
+  }
+  
+  .title {
+    font-size: 1.25rem; /* 20px - same as VIDEOS RELACIONADOS */
+    font-weight: normal; /* Not bold */
+    color: #ffffff; /* White color */
+    text-transform: capitalize; /* Capitalize instead of default */
+    letter-spacing: 0.2em; /* Spaced-out letters */
+    font-style: normal; /* Not italic */
+    margin-bottom: 0.25rem;
+  }
+  
+  .subtitle {
+    color: #71717a;
+    font-size: 0.875rem;
+  }
+  
+  .gridContainer {
+    padding: 0 1.5rem 2rem;
+  }
+  
+  .categoriesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem; /* 12px */
+  }
+  
+  /* Optional: Add responsive spacing for larger screens */
+  @media (min-width: 768px) {
+    .categoriesGrid {
+      gap: 0.75rem; /* 12px - consistent spacing */
+    }
+  }
+  
+  .emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 1.5rem;
+    text-align: center;
+  }
+  
+  .emptyStateText {
+    color: #71717a;
+  }
+  
+  .errorContainer {
+    min-height: 100vh;
+    background-color: #000;
+    color: #fff;
+  }
+  
+  .errorContent {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 0;
+  }
+  
+  .errorText {
+    color: #71717a;
+  }
+  
+  
+
+  

@@ -1,44 +1,63 @@
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+// app/categories/page.tsx
+import { supabase } from "@/lib/supabase";
+import CategoryCard from "@/components/CategoryCard";
+import GFBanner from "@/components/GFBanner";
+import styles from "./Categories.module.css";
+
+export const metadata = {
+  title: "Categorías - SEXOTV",
+  description: "Explora todas las categorías disponibles",
+};
 
 export default async function CategoriesPage() {
-  // 1. Fetch all categories from the 'categories' table
   const { data: categories, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('name', { ascending: true });
+    .from("categories")
+    .select("id, name, thumbnail_url")
+    .order("name", { ascending: true });
 
   if (error) {
-    console.error('Error fetching categories:', error);
-    return <div className="p-4 text-white">Error loading categories.</div>;
+    console.error("Error fetching categories:", error);
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorContent}>
+          <p className={styles.errorText}>Error al cargar categorías</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-black p-4">
-      {/* Page Title */}
-      <h1 className="text-2xl font-black text-white uppercase italic mb-6 tracking-tighter">
-        Categorías
-      </h1>
-
-      {/* 2. Two-Column Grid for Categories */}
-      <div className="grid grid-cols-2 gap-3">
-        {categories?.map((category) => (
-          <Link 
-            key={category.id} 
-            href={`/category/${category.id}`}
-            className="group"
-          >
-            <div className="bg-[#211d1d] h-[100px] flex items-center justify-center rounded-xl border border-white/5 active:scale-95 transition-all group-hover:bg-zinc-800 shadow-lg">
-              <span 
-                className="text-white font-bold uppercase text-sm tracking-widest text-center px-2"
-                style={{ color: 'white' }} // Defeating purple text
-              >
-                {category.name}
-              </span>
-            </div>
-          </Link>
-        ))}
+    <div className={styles.container}>
+      {/* Page Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Categorías</h1>
+        <p className={styles.subtitle}>
+          {categories?.length || 0} {categories?.length === 1 ? 'categoría' : 'categorías'} disponibles
+        </p>
       </div>
-    </main>
+
+      {/* Two-column grid */}
+      <div className={styles.gridContainer}>
+        <div className={styles.categoriesGrid}>
+          {categories?.map((category, index) => (
+            <CategoryCard 
+              key={category.id} 
+              category={category}
+              priority={index < 2} // First 2 images load with priority
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* GFBanner below categories - fetches random banner automatically */}
+      <GFBanner />
+
+      {/* Empty state */}
+      {(!categories || categories.length === 0) && (
+        <div className={styles.emptyState}>
+          <p className={styles.emptyStateText}>No hay categorías disponibles todavía.</p>
+        </div>
+      )}
+    </div>
   );
 }

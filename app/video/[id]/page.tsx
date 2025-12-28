@@ -111,12 +111,8 @@ export default async function VideoPage({
         </div>
       </div>
 
-      {/* Banner Section */}
-      <GFBanner 
-        imageUrl="https://awmewvzgyaylxmxsptcz.supabase.co/storage/v1/object/public/banners/ai_girlfriend_banner.jpg"
-        alt="AI Girlfriend Banner"
-        href="https://charlare.co"
-      />
+      {/* Banner Section - fetches random banner automatically */}
+      <GFBanner />
 
       {/* Related Videos Section */}
       <div className={relatedStyles.section}>

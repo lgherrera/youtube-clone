@@ -1,3 +1,5 @@
+// components/ThumbCard.tsx
+
 "use client";
 
 import Link from "next/link";
@@ -30,19 +32,29 @@ export default function ThumbCard({ video }: { video: any }) {
         {/* Categories with heart icons */}
         {video.categories?.length > 0 && (
           <div className={styles.categories}>
-            {video.categories.map((cat: string, index: number) => (
-              <span key={index} className={styles.categoryItem}>
-                <Image 
-                  src="/heart.svg" 
-                  alt="heart" 
-                  width={20}
-                  height={20}
-                  className={styles.heartIcon}
-                />
-                {cat}
-                {index < video.categories.length - 1 && ", "}
-              </span>
-            ))}
+            {video.categories.map((categoryName: string, index: number) => {
+              // Generate slug from category name
+              const categorySlug = categoryName.toLowerCase().replace(/\s+/g, '-');
+              
+              return (
+                <span key={index} className={styles.categoryWrapper}>
+                  <Link 
+                    href={`/category/${categorySlug}`}
+                    className={styles.categoryItem}
+                  >
+                    <Image 
+                      src="/heart.svg" 
+                      alt="heart" 
+                      width={20}
+                      height={20}
+                      className={styles.heartIcon}
+                    />
+                    {categoryName}
+                  </Link>
+                  {index < video.categories.length - 1 && <span className={styles.separator}>, </span>}
+                </span>
+              );
+            })}
           </div>
         )}
       </div>

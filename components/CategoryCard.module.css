@@ -1,0 +1,44 @@
+/* components/CategoryCard.module.css */
+
+.card {
+    display: block;
+  }
+  
+  .thumbnailContainer {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    overflow: hidden;
+    border-radius: 0; /* 90-degree angles */
+    background-color: #18181b;
+    margin-bottom: 0.5rem;
+  }
+  
+  .thumbnail {
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .card:hover .thumbnail {
+    transform: scale(1.05);
+  }
+  
+  .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #ec4899;
+  }
+  
+  .categoryName {
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: #fff;
+  }
+  
