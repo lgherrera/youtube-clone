@@ -32,14 +32,11 @@ export default function ThumbCard({ video }: { video: any }) {
         {/* Categories with heart icons */}
         {video.categories?.length > 0 && (
           <div className={styles.categories}>
-            {video.categories.map((categoryName: string, index: number) => {
-              // Generate slug from category name
-              const categorySlug = categoryName.toLowerCase().replace(/\s+/g, '-');
-              
+            {video.categories.map((category: any, index: number) => {
               return (
-                <span key={index} className={styles.categoryWrapper}>
+                <span key={category.id} className={styles.categoryWrapper}>
                   <Link 
-                    href={`/category/${categorySlug}`}
+                    href={`/category/${category.id}`}
                     className={styles.categoryItem}
                   >
                     <Image 
@@ -49,7 +46,7 @@ export default function ThumbCard({ video }: { video: any }) {
                       height={20}
                       className={styles.heartIcon}
                     />
-                    {categoryName}
+                    {category.name}
                   </Link>
                   {index < video.categories.length - 1 && <span className={styles.separator}>, </span>}
                 </span>

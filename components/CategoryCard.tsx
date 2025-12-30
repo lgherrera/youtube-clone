@@ -9,12 +9,12 @@ interface CategoryCardProps {
     name: string;
     thumbnail_url: string | null;
   };
-  priority?: boolean; // Add priority prop for first images
+  priority?: boolean;
 }
 
 export default function CategoryCard({ category, priority = false }: CategoryCardProps) {
   return (
-    <Link href={`/categories/${category.id}`} className={styles.card}>
+    <Link href={`/category/${category.id}`} className={styles.card}>
       {/* Thumbnail container with 16:9 aspect ratio */}
       <div className={styles.thumbnailContainer}>
         {category.thumbnail_url ? (

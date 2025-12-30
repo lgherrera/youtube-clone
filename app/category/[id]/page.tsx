@@ -11,49 +11,36 @@ export default async function CategoryPage({
 }) {
   const { id } = await params;
 
-  // Try multiple lookup strategies
-  // 1. Direct ID or slug match
-  let { data: category } = await supabase
+  // Fetch all categories and find match with case-insensitive comparison
+  const { data: categories, error: fetchError } = await supabase
     .from("categories")
-    .select("*")
-    .or(`id.eq.${id},slug.eq.${id}`)
-    .single();
+    .select("*");
 
-  // 2. If not found, try case-insensitive name match
-  if (!category) {
-    const nameToMatch = id.replace(/-/g, ' ');
-    const { data: categoryByName } = await supabase
-      .from("categories")
-      .select("*")
-      .ilike('name', nameToMatch)
-      .single();
-    
-    category = categoryByName;
-  }
-
-  // 3. If still not found, try partial match
-  if (!category) {
-    const searchTerm = id.replace(/-/g, ' ');
-    const { data: categories } = await supabase
-      .from("categories")
-      .select("*")
-      .ilike('name', `%${searchTerm}%`)
-      .limit(1);
-    
-    if (categories && categories.length > 0) {
-      category = categories[0];
-    }
-  }
-
-  if (!category) {
+  if (fetchError) {
+    console.error("Category fetch error:", fetchError);
     return (
       <div className={styles.container}>
-        <h1>Categoría no encontrada</h1>
+        <h1>Error al cargar categorías</h1>
       </div>
     );
   }
 
-  // Fetch videos for this category
+  // Find category with case-insensitive ID match
+  const category = categories?.find(
+    (cat) => cat.id.toLowerCase() === id.toLowerCase()
+  );
+
+  if (!category) {
+    console.error("Category not found. Looking for:", id, "Available:", categories?.map(c => c.id));
+    return (
+      <div className={styles.container}>
+        <h1>Categoría no encontrada</h1>
+        <p>ID buscado: {id}</p>
+      </div>
+    );
+  }
+
+  // Fetch videos for this category with category IDs and names
   const { data: videoLinks } = await supabase
     .from("video_categories")
     .select(`
@@ -63,19 +50,22 @@ export default async function CategoryPage({
         thumbnail_url,
         created_at,
         video_categories(
-          categories(name)
+          categories(id, name)
         )
       )
     `)
     .eq("category_id", category.id);
 
-  // Transform to match home page format
+  // Transform to match home page format with category objects
   const videos = videoLinks
     ?.map((link: any) => link.videos)
     .filter((v: any) => v && v.id)
     .map((video: any) => ({
       ...video,
-      categories: video.video_categories?.map((vc: any) => vc.categories?.name).filter(Boolean) || []
+      categories: video.video_categories?.map((vc: any) => ({
+        id: vc.categories?.id,
+        name: vc.categories?.name
+      })).filter((cat: any) => cat.id && cat.name) || []
     })) || [];
 
   return (

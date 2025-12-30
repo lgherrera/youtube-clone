@@ -28,6 +28,9 @@ export default async function CategoriesPage() {
 
   return (
     <div className={styles.container}>
+      {/* GFBanner at the top - right below header component */}
+      <GFBanner />
+
       {/* Page Header */}
       <div className={styles.header}>
         <h1 className={styles.title}>Categorías</h1>
@@ -48,9 +51,6 @@ export default async function CategoriesPage() {
           ))}
         </div>
       </div>
-
-      {/* GFBanner below categories - fetches random banner automatically */}
-      <GFBanner />
 
       {/* Empty state */}
       {(!categories || categories.length === 0) && (
