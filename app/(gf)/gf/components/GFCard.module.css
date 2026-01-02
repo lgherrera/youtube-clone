@@ -1,40 +1,43 @@
 /* app/(gf)/gf/components/GFCard.module.css */
 
 .card {
-    background-color: #000;
-    border-radius: 16px;
-    overflow: hidden;
-    cursor: pointer;
-    max-width: 500px;
-    margin: 0 auto;
-  }
+  background-color: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.imageContainer {
+  /* FIX: display: block makes the <Link> respect width/height/aspect-ratio */
+  display: block; 
   
-  .imageContainer {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 3/4;
-    background-color: #1a1a1a;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-  
-  .image {
-    object-fit: cover;
-  }
-  
-  .content {
-    padding: 1.5rem 1rem;
-  }
-  
-  .title {
-    color: #fff;
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-  
-  .description {
-    color: #a1a1a1;
-    font-size: 0.9375rem;
-    line-height: 1.5;
-  }
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.content {
+  padding: 1.5rem 1rem;
+}
+
+.title {
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  color: #a1a1a1;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}

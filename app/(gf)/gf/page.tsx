@@ -2,12 +2,14 @@
 import { supabase } from '../../../lib/supabase';
 import GFHeader from './components/GFHeader';
 import GFCard from './components/GFCard';
+import GFFooter from './components/GFFooter';
 import styles from './page.module.css';
 
 export default async function GirlfriendPage() {
+  // Fetch slug along with other data
   const { data: girlfriends, error } = await supabase
     .from('girlfriends')
-    .select('*')
+    .select('id, slug, name, age, description, image_url') 
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -25,6 +27,7 @@ export default async function GirlfriendPage() {
               <GFCard
                 key={gf.id}
                 id={gf.id}
+                slug={gf.slug} // Pass the slug to the card
                 name={gf.name}
                 age={gf.age}
                 description={gf.description}
@@ -38,6 +41,7 @@ export default async function GirlfriendPage() {
           </div>
         )}
       </main>
+
     </div>
   );
 }
