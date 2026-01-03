@@ -35,8 +35,3 @@ export default function GFImages({ images }: GFImagesProps) {
     </div>
   );
 }
-```
-
-And the CSS file should be at:
-```
-app/(gf)/gf/components/GFImages.module.css
