@@ -42,6 +42,8 @@ export default async function GirlfriendPage() {
         )}
       </main>
 
+      <GFFooter />
+
     </div>
   );
 }
