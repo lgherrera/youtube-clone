@@ -2,18 +2,18 @@
 
 .footer {
     background-color: #000;
-    width: 100%;
     
-    /* FIX: Constrain width to 500px and center it to match GFCard */
+    /* FIX: Removed width: 100% */
+    /* Exact same constraints as .card */
     max-width: 500px;
     margin: 0 auto;
     
+    /* We keep padding for the text inside, similar to .content in the card */
     padding: 2rem 1rem;
     margin-top: auto;
   }
   
   .footerContent {
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
