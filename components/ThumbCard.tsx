@@ -7,17 +7,34 @@ import Image from "next/image";
 import styles from "./ThumbCard.module.css";
 
 export default function ThumbCard({ video }: { video: any }) {
+  // Use custom thumbnail if available, fallback to Cloudflare auto-generated
+  const displayThumbnail = video.thumbnail_url || video.cloudflare_thumbnail_url || '/placeholder.jpg';
+  
+  // Format duration (seconds to MM:SS)
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
   return (
     <div className={styles.card}>
       {/* Thumbnail */}
       <Link href={`/video/${video.id}`} className={styles.thumbnailLink}>
         <div className={styles.thumbnailContainer}>
           <img 
-            src={video.thumbnail_url} 
+            src={displayThumbnail}
             alt={video.title}
             className={styles.thumbnail}
             loading="lazy"
           />
+          {/* Duration badge */}
+          {video.duration_seconds && (
+            <span className={styles.duration}>
+              {formatDuration(video.duration_seconds)}
+            </span>
+          )}
         </div>
       </Link>
 

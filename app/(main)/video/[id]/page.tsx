@@ -1,20 +1,19 @@
-//app/video/[id]/page.tsx
-import { supabase } from '@/lib/supabase';
+// app/(main)/video/[id]/page.tsx
+import { supabase } from "@/lib/supabase";
+import { notFound } from 'next/navigation';
+import CloudflarePlayer from '@/components/video/CloudflarePlayer';
 import ThumbCard from '@/components/ThumbCard';
-import GFBanner from '@/components/GFBanner';
-import Link from 'next/link';
-import Image from 'next/image';
-import styles from './videoPage.module.css';
-import relatedStyles from './relatedVideos.module.css';
 
-export default async function VideoPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+interface VideoPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default async function VideoPage({ params }: VideoPageProps) {
   const { id } = await params;
-
-  // 1. Fetch current video details and categories
+  
+  // Fetch the main video with categories
   const { data: video, error } = await supabase
     .from('videos')
     .select(`
@@ -28,109 +27,94 @@ export default async function VideoPage({
     `)
     .eq('id', id)
     .single();
-
-  if (error || !video) {
-    return <div className="p-10 text-white text-center">Video no encontrado.</div>;
-  }
-
-  // 2. Fetch Related Videos (same categories)
-  const categoryIds = video.video_categories?.map((vc: any) => vc.categories.id) || [];
   
-  const { data: relatedData } = await supabase
-    .from('video_categories')
-    .select(`
-      videos (
-        id,
-        title,
-        thumbnail_url,
-        video_categories (
-          categories (id, name)
+  if (error || !video) {
+    notFound();
+  }
+  
+  // Format categories
+  const categories = video.video_categories?.map((vc: any) => vc.categories) || [];
+  const videoWithCategories = { ...video, categories };
+  
+  // Fetch related videos (same categories, excluding current video)
+  const categoryIds = categories.map((c: any) => c.id);
+  let relatedVideos: any[] = [];
+  
+  if (categoryIds.length > 0) {
+    const { data } = await supabase
+      .from('videos')
+      .select(`
+        *,
+        video_categories!inner (
+          categories (
+            id,
+            name
+          )
         )
-      )
-    `)
-    .in('category_id', categoryIds)
-    .limit(10);
-
-  // Filter out the current video and transform for ThumbCard
-  const relatedVideos = relatedData
-    ?.map((link: any) => link.videos)
-    .filter((v: any) => v && v.id !== id)
-    .map((rv: any) => ({
-      id: rv.id,
-      title: rv.title,
-      thumbnail_url: rv.thumbnail_url,
-      categories: rv.video_categories?.map((vc: any) => vc.categories?.name).filter(Boolean) || []
-    })) || [];
-
+      `)
+      .in('video_categories.category_id', categoryIds)
+      .neq('id', id)
+      .limit(8);
+    
+    if (data) {
+      relatedVideos = data.map((v: any) => ({
+        ...v,
+        categories: v.video_categories?.map((vc: any) => vc.categories) || []
+      }));
+    }
+  }
+  
   return (
-    <main className="flex flex-col bg-black min-h-screen">
-      {/* Video Player Section */}
-      <div className="w-full aspect-video bg-zinc-900">
-        <video 
-          src={video.video_url} 
-          controls 
-          className="w-full h-full"
-          poster={video.thumbnail_url}
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
+      {/* Video Player */}
+      <div style={{ marginBottom: '30px' }}>
+        <CloudflarePlayer
+          videoUid={video.cloudflare_uid}
+          poster={video.thumbnail_url || video.cloudflare_thumbnail_url}
+          controls={true}
+          preload="metadata"
         />
       </div>
-
-      {/* Info Section (#211d1d) */}
-      <div className={styles.infoSection}>
-        {/* Title - matching ThumbCard exact styling */}
-        <h1 className={styles.title}>
+      
+      {/* Video Info */}
+      <div style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '15px' }}>
           {video.title}
         </h1>
         
-        {/* Categories and Heart Icon Container - matching ThumbCard */}
-        <div className={styles.categoryContainer}>
-          {/* Heart Icon - positioned to the LEFT */}
-          <button className={styles.heartButton}>
-            <Image
-              src="/heart.svg"
-              alt="Like"
-              width={20}
-              height={20}
-              className={styles.heartIcon}
-            />
-          </button>
-
-          <div className={styles.categories}>
-            {video.video_categories?.map((vc: any, index: number) => (
-              <div key={vc.categories.id} className={styles.categoryItem}>
-                <Link href={`/category/${vc.categories.id}`} className={styles.categoryLink}>
-                  <span className={styles.category}>
-                    {vc.categories.name}
-                  </span>
-                </Link>
-                {index < (video.video_categories.length - 1) && (
-                  <span className={styles.comma}>, </span>
-                )}
-              </div>
+        {video.description && (
+          <p style={{ color: '#666', marginBottom: '15px', lineHeight: '1.6' }}>
+            {video.description}
+          </p>
+        )}
+        
+        <div style={{ display: 'flex', gap: '20px', fontSize: '14px', color: '#888' }}>
+          {video.duration_seconds && (
+            <span>Duration: {Math.floor(video.duration_seconds / 60)}:{(video.duration_seconds % 60).toString().padStart(2, '0')}</span>
+          )}
+          {video.created_at && (
+            <span>Uploaded: {new Date(video.created_at).toLocaleDateString()}</span>
+          )}
+        </div>
+      </div>
+      
+      {/* Related Videos */}
+      {relatedVideos.length > 0 && (
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+            Related Videos
+          </h2>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+            gap: '20px' 
+          }}>
+            {relatedVideos.map((relatedVideo) => (
+              <ThumbCard key={relatedVideo.id} video={relatedVideo} />
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Banner Section - fetches random banner automatically */}
-      <GFBanner />
-
-      {/* Related Videos Section */}
-      <div className={relatedStyles.section}>
-        <div className={relatedStyles.headingContainer}>
-          <h2 className={relatedStyles.heading}>
-            Videos Relacionados
-          </h2>
-        </div>
-        
-        <div className={relatedStyles.videosContainer}>
-          {relatedVideos.map((video) => (
-            <ThumbCard 
-              key={video.id}
-              video={video}
-            />
-          ))}
-        </div>
-      </div>
-    </main>
+      )}
+    </div>
   );
 }
