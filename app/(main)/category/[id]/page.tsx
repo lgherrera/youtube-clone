@@ -73,7 +73,7 @@ export default async function CategoryPage({
       <h1 className={styles.title}>{category.name}</h1>
       
       {videos && videos.length > 0 ? (
-        <div className={styles.grid}>
+        <div className={styles.singleColumn}>
           {videos.map((video) => (
             <ThumbCard key={video.id} video={video} />
           ))}
