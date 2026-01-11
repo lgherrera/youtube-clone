@@ -11,7 +11,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   /* Force a mobile-only layout centered on screen */
-  max-width: 480px; 
+  max-width: 500px; 
   margin: 0 auto;
   min-height: 100vh;
   font-family: Arial, sans-serif;

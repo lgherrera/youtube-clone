@@ -62,7 +62,7 @@ export default async function Home() {
       <GFBanner />
 
       {/* Video Feed */}
-      <section className="flex flex-col w-full pb-20">
+      <section className="flex flex-col gap-6 w-full pb-20">
         {transformedAll?.map((video) => (
           <ThumbCard key={video.id} video={video} />
         ))}

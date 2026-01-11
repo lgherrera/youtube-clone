@@ -11,8 +11,9 @@
 .title {
   color: white;
   font-weight: normal;
-  font-size: 1.125rem; /* 18px - matches ThumbCard */
+  font-size: 1.25rem;
   line-height: 1.2;
+  margin-top: -4px;
   margin-bottom: 8px; /* Add space between title and categories */
 }
 

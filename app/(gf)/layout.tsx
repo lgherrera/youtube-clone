@@ -13,7 +13,7 @@ export default function GFLayout({
 }>) {
   return (
     <div className="min-h-screen bg-black">
-      <main>{children}</main>
+      <main className="mx-auto max-w-[500px]">{children}</main>
     </div>
   );
 }

@@ -1,29 +1,35 @@
 /* relatedVideos.module.css */
 
 .section {
-    display: flex;
-    flex-direction: column;
-    background-color: black;
-    padding-bottom: 40px;
-  }
-  
-  .headingContainer {
-    padding-left: 0; /* No left padding - aligns with thumbnail image */
-    padding-right: 24px;
-    padding-top: 10px; /* Reduced from 12px */
-    padding-bottom: 10px; /* Same spacing top and bottom */
-  }
-  
-  .heading {
-    font-size: 20px; /* Video title is 18px (1.125rem), this is 2px larger */
-    font-weight: normal; /* Same as video title font-weight */
-    color: #71717a; /* zinc-500 */
-    text-transform: capitalize; /* UpperCase LowerCase instead of UPPERCASE */
-    letter-spacing: 0.2em;
-    font-style: normal; /* Not italic/cursive */
-  }
-  
-  .videosContainer {
-    display: flex;
-    flex-direction: column;
-  }
+  display: flex;
+  flex-direction: column;
+  background-color: black;
+  padding-bottom: 40px;
+}
+
+.headingContainer {
+  padding-left: 0; /* No left padding - aligns with thumbnail image */
+  padding-right: 24px;
+  padding-top: 10px; /* Reduced from 12px */
+  padding-bottom: 10px; /* Same spacing top and bottom */
+}
+
+.heading {
+  font-size: 20px; /* Video title is 18px (1.125rem), this is 2px larger */
+  font-weight: normal; /* Same as video title font-weight */
+  color: #71717a; /* zinc-500 */
+  text-transform: capitalize; /* UpperCase LowerCase instead of UPPERCASE */
+  letter-spacing: 0.2em;
+  font-style: normal; /* Not italic/cursive */
+}
+
+.videosContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Control spacing between related videos */
+}
+
+/* Override ThumbCard's margin in this context */
+.videosContainer > * {
+  margin-bottom: 0;
+}
