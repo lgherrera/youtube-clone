@@ -23,9 +23,7 @@ export default function IntroVideoMessage({
   const handlePlayClick = async () => {
     if (videoRef.current) {
       try {
-        // Start playing - the video will load and play
         await videoRef.current.play();
-        // Only hide poster AFTER play succeeds (video is actually playing)
         setShowPoster(false);
         setIsPlaying(true);
       } catch (error) {
@@ -50,52 +48,54 @@ export default function IntroVideoMessage({
   };
 
   return (
-    <div className={styles.videoWrapper}>
-      {/* Video element - always present but hidden behind poster until playing */}
-      <video
-        ref={videoRef}
-        className={styles.video}
-        src={videoUrl}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onEnded={handleEnded}
-        controls
-        playsInline
-        preload="auto"
-        style={{ 
-          opacity: showPoster ? 0 : 1,
-          pointerEvents: showPoster ? 'none' : 'auto'
-        }}
-      >
-        Your browser does not support the video tag.
-      </video>
-      
-      {/* Poster overlay - shown until video is actually playing */}
-      {showPoster && (
-        <div className={styles.posterOverlay}>
-          {posterUrl && (
-            <img 
-              src={posterUrl} 
-              alt="Video thumbnail" 
-              className={styles.posterImage}
-            />
-          )}
-          <button 
-            className={styles.playButton}
-            onClick={handlePlayClick}
-            aria-label="Play video"
-          >
-            <svg 
-              width="32" 
-              height="32" 
-              viewBox="0 0 24 24" 
-              fill="white"
+    <div className={styles.messageContainer}>
+      <div className={styles.videoWrapper}>
+        {/* Video element */}
+        <video
+          ref={videoRef}
+          className={styles.video}
+          src={videoUrl}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onEnded={handleEnded}
+          controls
+          playsInline
+          preload="auto"
+          style={{ 
+            opacity: showPoster ? 0 : 1,
+            pointerEvents: showPoster ? 'none' : 'auto'
+          }}
+        >
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* Poster overlay */}
+        {showPoster && (
+          <div className={styles.posterOverlay}>
+            {posterUrl && (
+              <img 
+                src={posterUrl} 
+                alt="Video thumbnail" 
+                className={styles.posterImage}
+              />
+            )}
+            <button 
+              className={styles.playButton}
+              onClick={handlePlayClick}
+              aria-label="Play video"
             >
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-        </div>
-      )}
+              <svg 
+                width="32" 
+                height="32" 
+                viewBox="0 0 24 24" 
+                fill="white"
+              >
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
