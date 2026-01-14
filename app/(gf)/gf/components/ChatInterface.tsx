@@ -15,6 +15,7 @@ interface Girlfriend {
   description?: string;
   image_url?: string;
   hello_url?: string;
+  hello_poster_url?: string; // Add this for video poster
 }
 
 interface Message {
@@ -94,6 +95,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         {showIntroVideo && (
           <IntroVideoMessage
             videoUrl={girlfriend.hello_url!}
+            posterUrl={girlfriend.hello_poster_url || girlfriend.image_url}
             onVideoEnd={handleVideoEnd}
           />
         )}
