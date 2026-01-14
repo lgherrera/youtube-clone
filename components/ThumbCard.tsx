@@ -29,6 +29,12 @@ export default function ThumbCard({ video }: { video: any }) {
             className={styles.thumbnail}
             loading="lazy"
           />
+          
+          {/* CSS Play Button */}
+          <div className={styles.playButton}>
+            <div className={styles.playTriangle}></div>
+          </div>
+          
           {/* Duration badge */}
           {video.duration_seconds && (
             <span className={styles.duration}>

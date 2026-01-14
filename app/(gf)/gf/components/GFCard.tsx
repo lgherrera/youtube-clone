@@ -5,7 +5,7 @@ import styles from './GFCard.module.css';
 
 interface GFCardProps {
   id: string;
-  slug: string; // Added this so we can link to /gf/[slug]/chat
+  slug: string;
   name: string;
   age: number;
   description: string;
@@ -21,15 +21,11 @@ export default function GFCard({
   image_url
 }: GFCardProps) {
   
-  // Construct the dynamic URL for the chat page
   const chatUrl = `/gf/${slug}/chat`;
 
   return (
     <div className={styles.card}>
-      
-      {/* 1. Wrap the Image Container in a Link */}
-      {/* We pass the existing style class to the Link so layout stays the same */}
-      <Link href={chatUrl} className={styles.imageContainer}>
+      <Link href={chatUrl} className={styles.imageContainer} style={{ display: 'block' }}>
         <Image
           src={image_url}
           alt={`${name}, ${age}`}
@@ -38,17 +34,16 @@ export default function GFCard({
           className={styles.image}
           priority
         />
-      </Link>
-      
-      <div className={styles.content}>
-        {/* 2. Wrap the Title in a Link */}
-        <Link href={chatUrl} style={{ textDecoration: 'none' }}>
-          <h2 className={styles.title}>{name}, {age}</h2>
-        </Link>
         
-        {/* Description remains unlinked text */}
-        <p className={styles.description}>{description}</p>
-      </div>
+        {/* Gradient overlay for text readability */}
+        <div className={styles.gradient} />
+        
+        {/* Text overlay at bottom of image */}
+        <div className={styles.textOverlay}>
+          <h2 className={styles.name}>{name}, {age}</h2>
+          <p className={styles.description}>{description}</p>
+        </div>
+      </Link>
     </div>
   );
 }

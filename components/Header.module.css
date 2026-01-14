@@ -1,0 +1,51 @@
+/* app/components/Header.module.css */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #000;
+    width: 100%;
+  }
+  
+  .headerContent {
+    height: 65px;
+    max-width: 500px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+  }
+  
+  .logoContainer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  
+  .iconButton {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  
+  .iconButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
