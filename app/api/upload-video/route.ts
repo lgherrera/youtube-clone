@@ -17,11 +17,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
+      console.error('Missing Cloudflare credentials');
       return NextResponse.json(
         { error: 'Cloudflare credentials not configured' },
         { status: 500 }
       );
     }
+
+    console.log('Uploading to Cloudflare Stream:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+    });
 
     // Upload to Cloudflare Stream
     const cloudflareFormData = new FormData();
@@ -38,17 +45,31 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    const responseText = await uploadResponse.text();
+    console.log('Cloudflare response status:', uploadResponse.status);
+    console.log('Cloudflare response:', responseText);
+
     if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json();
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = { message: responseText };
+      }
       console.error('Cloudflare upload error:', errorData);
       return NextResponse.json(
-        { error: 'Failed to upload to Cloudflare Stream' },
+        { 
+          error: 'Failed to upload to Cloudflare Stream',
+          details: errorData 
+        },
         { status: uploadResponse.status }
       );
     }
 
-    const data = await uploadResponse.json();
+    const data = JSON.parse(responseText);
     const video = data.result;
+
+    console.log('Cloudflare upload successful:', video.uid);
 
     // Return the Cloudflare data
     return NextResponse.json({
@@ -61,7 +82,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
