@@ -72,6 +72,13 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted');
+    console.log('Video file:', videoFile);
+    console.log('Thumbnail file:', thumbnailFile);
+    console.log('Slider file:', sliderFile);
+    console.log('Title:', title);
+    console.log('Selected categories:', selectedCategories);
+    
     if (!videoFile || !thumbnailFile || !sliderFile || !title || selectedCategories.length === 0) {
       alert('Please fill in all fields');
       return;
@@ -85,16 +92,25 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       const videoFormData = new FormData();
       videoFormData.append('file', videoFile);
 
+      console.log('Calling /api/upload-video...');
+      
       const cloudflareResponse = await fetch('/api/upload-video', {
         method: 'POST',
         body: videoFormData,
       });
 
+      console.log('Cloudflare response status:', cloudflareResponse.status);
+      console.log('Cloudflare response ok:', cloudflareResponse.ok);
+
+      const responseText = await cloudflareResponse.text();
+      console.log('Cloudflare response text:', responseText);
+
       if (!cloudflareResponse.ok) {
-        throw new Error('Failed to upload video to Cloudflare');
+        throw new Error(`Failed to upload video to Cloudflare: ${responseText}`);
       }
 
-      const cloudflareData = await cloudflareResponse.json();
+      const cloudflareData = JSON.parse(responseText);
+      console.log('Cloudflare data:', cloudflareData);
       
       setUploadProgress('Uploading images and saving metadata...');
 
@@ -109,13 +125,19 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       metadataFormData.append('duration_seconds', cloudflareData.duration.toString());
       metadataFormData.append('categories', JSON.stringify(selectedCategories));
 
+      console.log('Calling /api/videos/create...');
+
       const createResponse = await fetch('/api/videos/create', {
         method: 'POST',
         body: metadataFormData,
       });
 
+      console.log('Create response status:', createResponse.status);
+
       if (!createResponse.ok) {
-        throw new Error('Failed to create video record');
+        const errorText = await createResponse.text();
+        console.error('Create error:', errorText);
+        throw new Error(`Failed to create video record: ${errorText}`);
       }
 
       setUploadProgress('Video uploaded successfully!');
@@ -138,7 +160,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
 
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload video. Please try again.');
+      alert(`Failed to upload video: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUploading(false);
       setUploadProgress('');
     }
