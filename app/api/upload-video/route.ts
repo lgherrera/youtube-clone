@@ -5,11 +5,26 @@ const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 export async function POST(request: NextRequest) {
+  console.log('=== UPLOAD VIDEO ROUTE CALLED ===');
+  console.log('Environment check:', {
+    hasAccountId: !!CLOUDFLARE_ACCOUNT_ID,
+    hasApiToken: !!CLOUDFLARE_API_TOKEN,
+    accountIdLength: CLOUDFLARE_ACCOUNT_ID?.length,
+  });
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
+    console.log('File received:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+    });
+
     if (!file) {
+      console.error('No file in request');
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
@@ -17,37 +32,36 @@ export async function POST(request: NextRequest) {
     }
 
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-      console.error('Missing Cloudflare credentials');
+      console.error('Missing Cloudflare credentials:', {
+        hasAccountId: !!CLOUDFLARE_ACCOUNT_ID,
+        hasApiToken: !!CLOUDFLARE_API_TOKEN,
+      });
       return NextResponse.json(
         { error: 'Cloudflare credentials not configured' },
         { status: 500 }
       );
     }
 
-    console.log('Uploading to Cloudflare Stream:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-    });
+    console.log('Starting Cloudflare upload...');
 
     // Upload to Cloudflare Stream
     const cloudflareFormData = new FormData();
     cloudflareFormData.append('file', file);
 
-    const uploadResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-        },
-        body: cloudflareFormData,
-      }
-    );
+    const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream`;
+    console.log('Upload URL:', uploadUrl);
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+      },
+      body: cloudflareFormData,
+    });
 
     const responseText = await uploadResponse.text();
     console.log('Cloudflare response status:', uploadResponse.status);
-    console.log('Cloudflare response:', responseText);
+    console.log('Cloudflare response body:', responseText);
 
     if (!uploadResponse.ok) {
       let errorData;
@@ -56,11 +70,12 @@ export async function POST(request: NextRequest) {
       } catch {
         errorData = { message: responseText };
       }
-      console.error('Cloudflare upload error:', errorData);
+      console.error('Cloudflare upload failed:', errorData);
       return NextResponse.json(
         { 
           error: 'Failed to upload to Cloudflare Stream',
-          details: errorData 
+          details: errorData,
+          status: uploadResponse.status,
         },
         { status: uploadResponse.status }
       );
@@ -69,7 +84,7 @@ export async function POST(request: NextRequest) {
     const data = JSON.parse(responseText);
     const video = data.result;
 
-    console.log('Cloudflare upload successful:', video.uid);
+    console.log('Upload successful! Video UID:', video.uid);
 
     // Return the Cloudflare data
     return NextResponse.json({
@@ -80,7 +95,11 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('=== UPLOAD ERROR ===');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Full error:', error);
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
