@@ -13,13 +13,14 @@ export async function POST(request: NextRequest) {
     
     const title = formData.get('title') as string;
     const thumbnailFile = formData.get('thumbnail') as File;
+    const sliderFile = formData.get('slider') as File;
     const cloudflare_uid = formData.get('cloudflare_uid') as string;
     const cloudflare_playback_url = formData.get('cloudflare_playback_url') as string;
     const cloudflare_thumbnail_url = formData.get('cloudflare_thumbnail_url') as string;
     const duration_seconds = parseInt(formData.get('duration_seconds') as string);
     const categories = JSON.parse(formData.get('categories') as string);
 
-    if (!title || !thumbnailFile || !cloudflare_uid) {
+    if (!title || !thumbnailFile || !sliderFile || !cloudflare_uid) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -27,31 +28,56 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload thumbnail to Supabase Storage
-    const fileExt = thumbnailFile.name.split('.').pop();
-    const fileName = `${cloudflare_uid}.${fileExt}`;
-    const filePath = `thumbnails/${fileName}`;
+    const thumbnailExt = thumbnailFile.name.split('.').pop();
+    const thumbnailFileName = `${cloudflare_uid}.${thumbnailExt}`;
+    const thumbnailPath = `thumbnails/${thumbnailFileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: thumbnailUploadError } = await supabase.storage
       .from('videos')
-      .upload(filePath, thumbnailFile, {
+      .upload(thumbnailPath, thumbnailFile, {
         contentType: thumbnailFile.type,
         upsert: true,
       });
 
-    if (uploadError) {
-      console.error('Thumbnail upload error:', uploadError);
+    if (thumbnailUploadError) {
+      console.error('Thumbnail upload error:', thumbnailUploadError);
       return NextResponse.json(
         { error: 'Failed to upload thumbnail' },
         { status: 500 }
       );
     }
 
-    // Get public URL for thumbnail
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(filePath);
+    // Upload slider image to Supabase Storage
+    const sliderExt = sliderFile.name.split('.').pop();
+    const sliderFileName = `${cloudflare_uid}_slider.${sliderExt}`;
+    const sliderPath = `sliders/${sliderFileName}`;
 
-    const thumbnail_url = urlData.publicUrl;
+    const { error: sliderUploadError } = await supabase.storage
+      .from('videos')
+      .upload(sliderPath, sliderFile, {
+        contentType: sliderFile.type,
+        upsert: true,
+      });
+
+    if (sliderUploadError) {
+      console.error('Slider upload error:', sliderUploadError);
+      return NextResponse.json(
+        { error: 'Failed to upload slider image' },
+        { status: 500 }
+      );
+    }
+
+    // Get public URLs
+    const { data: thumbnailUrlData } = supabase.storage
+      .from('videos')
+      .getPublicUrl(thumbnailPath);
+
+    const { data: sliderUrlData } = supabase.storage
+      .from('videos')
+      .getPublicUrl(sliderPath);
+
+    const thumbnail_url = thumbnailUrlData.publicUrl;
+    const slider_url = sliderUrlData.publicUrl;
 
     // Insert video into database
     const { data: video, error: insertError } = await supabase
@@ -59,6 +85,7 @@ export async function POST(request: NextRequest) {
       .insert({
         title,
         thumbnail_url,
+        slider_url,
         video_url: cloudflare_playback_url,
         cloudflare_uid,
         cloudflare_playback_url,

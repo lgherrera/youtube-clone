@@ -6,45 +6,42 @@ import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import styles from './VideoUploadForm.module.css';
 
-interface VideoUploadFormProps {
-  onSuccess?: () => void;
-}
-
 interface Category {
   id: string;
   name: string;
 }
 
+interface VideoUploadFormProps {
+  onSuccess?: () => void;
+}
+
 export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [sliderFile, setSliderFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [loading, setLoading] = useState(true);
 
+  // Fetch categories from database
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
+    async function fetchCategories() {
       const { data, error } = await supabase
         .from('categories')
         .select('id, name')
         .order('name');
 
-      if (error) throw error;
-
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
+      if (error) {
+        console.error('Error fetching categories:', error);
+      } else if (data) {
+        setCategories(data);
+      }
     }
-  };
+
+    fetchCategories();
+  }, []);
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -55,6 +52,12 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setThumbnailFile(e.target.files[0]);
+    }
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSliderFile(e.target.files[0]);
     }
   };
 
@@ -69,7 +72,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!videoFile || !thumbnailFile || !title || selectedCategories.length === 0) {
+    if (!videoFile || !thumbnailFile || !sliderFile || !title || selectedCategories.length === 0) {
       alert('Please fill in all fields');
       return;
     }
@@ -93,12 +96,13 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
 
       const cloudflareData = await cloudflareResponse.json();
       
-      setUploadProgress('Uploading thumbnail and saving metadata...');
+      setUploadProgress('Uploading images and saving metadata...');
 
       // Step 2: Create video record in Supabase with metadata
       const metadataFormData = new FormData();
       metadataFormData.append('title', title);
       metadataFormData.append('thumbnail', thumbnailFile);
+      metadataFormData.append('slider', sliderFile);
       metadataFormData.append('cloudflare_uid', cloudflareData.cloudflare_uid);
       metadataFormData.append('cloudflare_playback_url', cloudflareData.playback_url);
       metadataFormData.append('cloudflare_thumbnail_url', cloudflareData.thumbnail_url);
@@ -119,6 +123,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       // Reset form
       setVideoFile(null);
       setThumbnailFile(null);
+      setSliderFile(null);
       setTitle('');
       setSelectedCategories([]);
       
@@ -138,14 +143,6 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       setUploadProgress('');
     }
   };
-
-  if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <Loader2 className="animate-spin mx-auto text-white" size={32} />
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className={styles.container}>
@@ -193,6 +190,27 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         </div>
       </div>
 
+      {/* Slider Image File Input */}
+      <div className={styles.formSection}>
+        <label className={styles.label}>Slider Image</label>
+        <div className={styles.fileInputWrapper}>
+          <label className={styles.uploadButton}>
+            <Upload size={20} />
+            Choose Slider Image
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleSliderChange}
+              className={styles.hiddenInput}
+              disabled={uploading}
+            />
+          </label>
+          {sliderFile && (
+            <span className={styles.fileName}>{sliderFile.name}</span>
+          )}
+        </div>
+      </div>
+
       {/* Title Input */}
       <div className={styles.formSection}>
         <label className={styles.label}>Video Title</label>
@@ -208,9 +226,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
 
       {/* Categories Selection */}
       <div className={styles.formSection}>
-        <label className={styles.label}>
-          Categories ({selectedCategories.length} selected)
-        </label>
+        <label className={styles.label}>Categories</label>
         <div className={styles.categoriesGrid}>
           {categories.map((category) => (
             <label key={category.id} className={styles.categoryLabel}>
@@ -230,17 +246,13 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       {/* Upload Progress */}
       {uploadProgress && (
         <div className={styles.progressContainer}>
-          <Loader2 className="animate-spin mx-auto" />
+          <Loader2 className="animate-spin mx-auto mb-2" />
           <p className={styles.progressText}>{uploadProgress}</p>
         </div>
       )}
 
       {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={uploading}
-        className={styles.submitButton}
-      >
+      <button type="submit" disabled={uploading} className={styles.submitButton}>
         {uploading ? (
           <>
             <Loader2 className="animate-spin" size={20} />
