@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
+// Increase body size limit for video uploads
+export const runtime = 'nodejs';
+export const maxDuration = 90; // 90 seconds timeout
+
 export async function POST(request: NextRequest) {
   console.log('=== UPLOAD VIDEO ROUTE CALLED ===');
   console.log('Environment check:', {
