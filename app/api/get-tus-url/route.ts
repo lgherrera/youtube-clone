@@ -8,10 +8,23 @@ export async function POST(request: NextRequest) {
   console.log('=== GET TUS URL CALLED ===');
 
   try {
-    const body = await request.json();
-    const { fileSize } = body;
+    let fileSize: number;
+    
+    // Try to parse JSON body
+    try {
+      const body = await request.json();
+      fileSize = body.fileSize;
+      console.log('File size from body:', fileSize);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
 
     if (!fileSize || fileSize <= 0) {
+      console.error('Invalid file size:', fileSize);
       return NextResponse.json(
         { error: 'Invalid file size' },
         { status: 400 }
