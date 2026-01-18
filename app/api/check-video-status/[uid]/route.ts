@@ -37,13 +37,17 @@ export async function GET(
     const data = await response.json();
     const video = data.result;
 
+    console.log('Video data from Cloudflare:', video);
+
     // Check if video is ready
     const ready = video.status?.state === 'ready';
 
+    // Use the playback URLs directly from Cloudflare's response
+    // Cloudflare provides the correct customer subdomain URLs
     return NextResponse.json({
       ready,
-      playback_url: `https://customer-${CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${uid}/manifest/video.m3u8`,
-      thumbnail_url: `https://customer-${CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`,
+      playback_url: video.playback?.hls || '',
+      thumbnail_url: video.thumbnail || '',
       duration: video.duration || 0,
     });
   } catch (error) {
