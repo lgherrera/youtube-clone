@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import styles from './VideoUploadForm.module.css';
+import * as tus from 'tus-js-client';
 
 interface Category {
   id: string;
@@ -24,6 +25,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [uploadPercentage, setUploadPercentage] = useState(0);
 
   // Fetch categories from database
   useEffect(() => {
@@ -72,71 +74,81 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted');
-    console.log('Video file:', videoFile);
-    console.log('Thumbnail file:', thumbnailFile);
-    console.log('Slider file:', sliderFile);
-    console.log('Title:', title);
-    console.log('Selected categories:', selectedCategories);
-    
     if (!videoFile || !thumbnailFile || !sliderFile || !title || selectedCategories.length === 0) {
       alert('Please fill in all fields');
       return;
     }
 
     setUploading(true);
-    setUploadProgress('Uploading video to Cloudflare Stream...');
+    setUploadProgress('Getting upload URL from Cloudflare...');
+    setUploadPercentage(0);
 
     try {
-      // Step 1: Upload video to Cloudflare Stream
-      const videoFormData = new FormData();
-      videoFormData.append('file', videoFile);
-
-      console.log('Calling /api/upload-video...');
-      
-      const cloudflareResponse = await fetch('/api/upload-video', {
+      // Step 1: Get TUS upload URL from Cloudflare
+      const tusResponse = await fetch('/api/get-tus-url', {
         method: 'POST',
-        body: videoFormData,
       });
 
-      console.log('Cloudflare response status:', cloudflareResponse.status);
-      console.log('Cloudflare response ok:', cloudflareResponse.ok);
-
-      const responseText = await cloudflareResponse.text();
-      console.log('Cloudflare response text:', responseText);
-
-      if (!cloudflareResponse.ok) {
-        throw new Error(`Failed to upload video to Cloudflare: ${responseText}`);
+      if (!tusResponse.ok) {
+        throw new Error('Failed to get upload URL from Cloudflare');
       }
 
-      const cloudflareData = JSON.parse(responseText);
-      console.log('Cloudflare data:', cloudflareData);
+      const { uploadURL, uid } = await tusResponse.json();
       
-      setUploadProgress('Uploading images and saving metadata...');
+      setUploadProgress('Uploading video to Cloudflare Stream...');
 
-      // Step 2: Create video record in Supabase with metadata
+      // Step 2: Upload video using TUS protocol
+      await new Promise<void>((resolve, reject) => {
+        const upload = new tus.Upload(videoFile, {
+          endpoint: uploadURL,
+          chunkSize: 50 * 1024 * 1024, // 50MB chunks
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          metadata: {
+            filename: videoFile.name,
+            filetype: videoFile.type,
+          },
+          onError: (error) => {
+            console.error('TUS upload error:', error);
+            reject(error);
+          },
+          onProgress: (bytesUploaded, bytesTotal) => {
+            const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+            setUploadPercentage(percentage);
+            setUploadProgress(`Uploading video: ${percentage}%`);
+          },
+          onSuccess: () => {
+            console.log('TUS upload complete');
+            resolve();
+          },
+        });
+
+        upload.start();
+      });
+
+      setUploadProgress('Uploading images and saving metadata...');
+      setUploadPercentage(0);
+
+      // Step 3: Wait for Cloudflare to process the video and get playback URLs
+      const cloudflareData = await waitForCloudflareProcessing(uid);
+
+      // Step 4: Create video record in Supabase with metadata
       const metadataFormData = new FormData();
       metadataFormData.append('title', title);
       metadataFormData.append('thumbnail', thumbnailFile);
       metadataFormData.append('slider', sliderFile);
-      metadataFormData.append('cloudflare_uid', cloudflareData.cloudflare_uid);
+      metadataFormData.append('cloudflare_uid', uid);
       metadataFormData.append('cloudflare_playback_url', cloudflareData.playback_url);
       metadataFormData.append('cloudflare_thumbnail_url', cloudflareData.thumbnail_url);
       metadataFormData.append('duration_seconds', cloudflareData.duration.toString());
       metadataFormData.append('categories', JSON.stringify(selectedCategories));
-
-      console.log('Calling /api/videos/create...');
 
       const createResponse = await fetch('/api/videos/create', {
         method: 'POST',
         body: metadataFormData,
       });
 
-      console.log('Create response status:', createResponse.status);
-
       if (!createResponse.ok) {
         const errorText = await createResponse.text();
-        console.error('Create error:', errorText);
         throw new Error(`Failed to create video record: ${errorText}`);
       }
 
@@ -155,6 +167,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
 
       setTimeout(() => {
         setUploadProgress('');
+        setUploadPercentage(0);
         setUploading(false);
       }, 2000);
 
@@ -163,7 +176,32 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       alert(`Failed to upload video: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUploading(false);
       setUploadProgress('');
+      setUploadPercentage(0);
     }
+  };
+
+  const waitForCloudflareProcessing = async (uid: string): Promise<any> => {
+    const maxAttempts = 30;
+    const delayMs = 2000;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const response = await fetch(`/api/check-video-status/${uid}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.ready) {
+            return data;
+          }
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } catch (error) {
+        console.error('Error checking video status:', error);
+      }
+    }
+
+    throw new Error('Video processing timeout');
   };
 
   return (
@@ -270,6 +308,14 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         <div className={styles.progressContainer}>
           <Loader2 className="animate-spin mx-auto mb-2" />
           <p className={styles.progressText}>{uploadProgress}</p>
+          {uploadPercentage > 0 && (
+            <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadPercentage}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
 
