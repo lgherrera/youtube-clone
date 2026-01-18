@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+const CLOUDFLARE_CUSTOMER_CODE = process.env.CLOUDFLARE_CUSTOMER_CODE;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
   try {
     const { uid } = await params;
 
-    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN || !CLOUDFLARE_CUSTOMER_CODE) {
       return NextResponse.json(
         { error: 'Cloudflare credentials not configured' },
         { status: 500 }
@@ -42,12 +43,11 @@ export async function GET(
     // Check if video is ready
     const ready = video.status?.state === 'ready';
 
-    // Use the playback URLs directly from Cloudflare's response
-    // Cloudflare provides the correct customer subdomain URLs
+    // Use customer subdomain for playback URLs
     return NextResponse.json({
       ready,
-      playback_url: video.playback?.hls || '',
-      thumbnail_url: video.thumbnail || '',
+      playback_url: `https://customer-${CLOUDFLARE_CUSTOMER_CODE}.cloudflarestream.com/${uid}/manifest/video.m3u8`,
+      thumbnail_url: `https://customer-${CLOUDFLARE_CUSTOMER_CODE}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`,
       duration: video.duration || 0,
     });
   } catch (error) {
