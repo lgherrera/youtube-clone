@@ -6,10 +6,6 @@ const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 export async function POST() {
   console.log('=== GET TUS URL CALLED ===');
-  console.log('Environment check:', {
-    hasAccountId: !!CLOUDFLARE_ACCOUNT_ID,
-    hasApiToken: !!CLOUDFLARE_API_TOKEN,
-  });
 
   try {
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
@@ -23,29 +19,26 @@ export async function POST() {
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`;
     console.log('Requesting TUS URL from:', uploadUrl);
 
-    // Create TUS upload URL
+    // Create TUS upload URL - don't include Upload-Length header
     const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
         'Tus-Resumable': '1.0.0',
-        'Upload-Length': '0',
       },
     });
 
     console.log('Cloudflare TUS response status:', response.status);
-    
-    const responseText = await response.text();
-    console.log('Cloudflare TUS response:', responseText);
 
     if (!response.ok) {
+      const responseText = await response.text();
+      console.error('Failed to get TUS URL:', responseText);
       let errorData;
       try {
         errorData = JSON.parse(responseText);
       } catch {
         errorData = { message: responseText };
       }
-      console.error('Failed to get TUS URL:', errorData);
       return NextResponse.json(
         { error: 'Failed to get upload URL', details: errorData },
         { status: response.status }
