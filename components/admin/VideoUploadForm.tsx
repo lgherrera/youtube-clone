@@ -134,11 +134,13 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         upload.start();
       });
 
-      setUploadProgress('Uploading images and saving metadata...');
+      setUploadProgress('Processing video... This may take a few minutes.');
       setUploadPercentage(0);
 
       // Step 3: Wait for Cloudflare to process the video and get playback URLs
       const cloudflareData = await waitForCloudflareProcessing(uid);
+
+      setUploadProgress('Uploading images and saving metadata...');
 
       // Step 4: Create video record in Supabase with metadata
       const metadataFormData = new FormData();
@@ -190,11 +192,13 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   };
 
   const waitForCloudflareProcessing = async (uid: string): Promise<any> => {
-    const maxAttempts = 30;
-    const delayMs = 2000;
+    const maxAttempts = 60; // Increased from 30 to 60
+    const delayMs = 5000; // Increased from 2000 to 5000 (5 seconds between checks)
 
     for (let i = 0; i < maxAttempts; i++) {
       try {
+        setUploadProgress(`Processing video... (${i + 1}/${maxAttempts})`);
+        
         const response = await fetch(`/api/check-video-status/${uid}`);
         
         if (response.ok) {
@@ -210,7 +214,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       }
     }
 
-    throw new Error('Video processing timeout');
+    throw new Error('Video processing timeout - video may still be processing in background');
   };
 
   return (
