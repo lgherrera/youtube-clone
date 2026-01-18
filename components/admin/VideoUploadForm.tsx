@@ -84,12 +84,20 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
     setUploadPercentage(0);
 
     try {
-      // Step 1: Get TUS upload URL from Cloudflare
+      // Step 1: Get TUS upload URL from Cloudflare with file size
       const tusResponse = await fetch('/api/get-tus-url', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileSize: videoFile.size,
+        }),
       });
 
       if (!tusResponse.ok) {
+        const errorData = await tusResponse.json();
+        console.error('TUS URL error:', errorData);
         throw new Error('Failed to get upload URL from Cloudflare');
       }
 
@@ -101,6 +109,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       await new Promise<void>((resolve, reject) => {
         const upload = new tus.Upload(videoFile, {
           endpoint: uploadURL,
+          uploadUrl: uploadURL,
           chunkSize: 50 * 1024 * 1024, // 50MB chunks
           retryDelays: [0, 3000, 5000, 10000, 20000],
           metadata: {

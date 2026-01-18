@@ -1,13 +1,23 @@
 // app/api/get-tus-url/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   console.log('=== GET TUS URL CALLED ===');
 
   try {
+    const body = await request.json();
+    const { fileSize } = body;
+
+    if (!fileSize || fileSize <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid file size' },
+        { status: 400 }
+      );
+    }
+
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
       console.error('Missing Cloudflare credentials');
       return NextResponse.json(
@@ -18,13 +28,15 @@ export async function POST() {
 
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`;
     console.log('Requesting TUS URL from:', uploadUrl);
+    console.log('File size:', fileSize);
 
-    // Create TUS upload URL - don't include Upload-Length header
+    // Create TUS upload URL with proper Upload-Length header
     const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
         'Tus-Resumable': '1.0.0',
+        'Upload-Length': fileSize.toString(),
       },
     });
 
