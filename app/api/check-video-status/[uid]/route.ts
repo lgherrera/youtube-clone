@@ -5,6 +5,8 @@ const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_CUSTOMER_CODE = process.env.CLOUDFLARE_CUSTOMER_CODE;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
+export const maxDuration = 120; // 120 seconds timeout
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string }> }

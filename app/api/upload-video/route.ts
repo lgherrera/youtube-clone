@@ -6,7 +6,7 @@ const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 // Increase body size limit for video uploads
 export const runtime = 'nodejs';
-export const maxDuration = 90; // 90 seconds timeout
+export const maxDuration = 120; // 90 seconds timeout
 
 export async function POST(request: NextRequest) {
   console.log('=== UPLOAD VIDEO ROUTE CALLED ===');
