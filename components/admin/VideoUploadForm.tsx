@@ -134,23 +134,23 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         upload.start();
       });
 
-      setUploadProgress('Processing video... This may take a few minutes.');
+      setUploadProgress('Uploading images and saving metadata...');
       setUploadPercentage(0);
 
-      // Step 3: Wait for Cloudflare to process the video and get playback URLs
-      const cloudflareData = await waitForCloudflareProcessing(uid);
+      // Step 3: Save video metadata immediately (don't wait for processing)
+      // Generate playback URLs using the customer code
+      const customerCode = process.env.NEXT_PUBLIC_CLOUDFLARE_CUSTOMER_CODE || 'axuxyg0uf4dira9j';
+      const playbackUrl = `https://customer-${customerCode}.cloudflarestream.com/${uid}/manifest/video.m3u8`;
+      const thumbnailUrl = `https://customer-${customerCode}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`;
 
-      setUploadProgress('Uploading images and saving metadata...');
-
-      // Step 4: Create video record in Supabase with metadata
       const metadataFormData = new FormData();
       metadataFormData.append('title', title);
       metadataFormData.append('thumbnail', thumbnailFile);
       metadataFormData.append('slider', sliderFile);
       metadataFormData.append('cloudflare_uid', uid);
-      metadataFormData.append('cloudflare_playback_url', cloudflareData.playback_url);
-      metadataFormData.append('cloudflare_thumbnail_url', cloudflareData.thumbnail_url);
-      metadataFormData.append('duration_seconds', cloudflareData.duration.toString());
+      metadataFormData.append('cloudflare_playback_url', playbackUrl);
+      metadataFormData.append('cloudflare_thumbnail_url', thumbnailUrl);
+      metadataFormData.append('duration_seconds', '0'); // Will be updated when video processes
       metadataFormData.append('categories', JSON.stringify(selectedCategories));
 
       const createResponse = await fetch('/api/videos/create', {
@@ -163,7 +163,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         throw new Error(`Failed to create video record: ${errorText}`);
       }
 
-      setUploadProgress('Video uploaded successfully!');
+      setUploadProgress('Video uploaded successfully! It may take a few minutes to process.');
       
       // Reset form
       setVideoFile(null);
@@ -180,7 +180,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         setUploadProgress('');
         setUploadPercentage(0);
         setUploading(false);
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
       console.error('Upload error:', error);
@@ -189,32 +189,6 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       setUploadProgress('');
       setUploadPercentage(0);
     }
-  };
-
-  const waitForCloudflareProcessing = async (uid: string): Promise<any> => {
-    const maxAttempts = 60; // Increased from 30 to 60
-    const delayMs = 5000; // Increased from 2000 to 5000 (5 seconds between checks)
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        setUploadProgress(`Processing video... (${i + 1}/${maxAttempts})`);
-        
-        const response = await fetch(`/api/check-video-status/${uid}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.ready) {
-            return data;
-          }
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } catch (error) {
-        console.error('Error checking video status:', error);
-      }
-    }
-
-    throw new Error('Video processing timeout - video may still be processing in background');
   };
 
   return (
