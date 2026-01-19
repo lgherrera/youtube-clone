@@ -46,15 +46,12 @@ export async function POST(request: NextRequest) {
     const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '');
     console.log('Name for Cloudflare:', nameWithoutExtension);
 
+    // Add meta parameter to URL to make video public
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`;
     console.log('Requesting TUS URL from:', uploadUrl);
 
-    // Prepare metadata for Cloudflare - fixed format
-    const uploadMetadata = [
-      `name ${Buffer.from(nameWithoutExtension).toString('base64')}`,
-      `requiresignedurls ${Buffer.from('false').toString('base64')}`,
-    ].join(',');
-
+    // Prepare metadata for Cloudflare
+    const uploadMetadata = `name ${Buffer.from(nameWithoutExtension).toString('base64')}`;
     console.log('Upload-Metadata header:', uploadMetadata);
 
     // Create TUS upload URL with proper headers including metadata
@@ -66,6 +63,12 @@ export async function POST(request: NextRequest) {
         'Upload-Length': fileSize.toString(),
         'Upload-Metadata': uploadMetadata,
       },
+      body: JSON.stringify({
+        meta: {
+          name: nameWithoutExtension,
+        },
+        requireSignedURLs: false,
+      }),
     });
 
     console.log('Cloudflare TUS response status:', response.status);
