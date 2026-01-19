@@ -9,12 +9,15 @@ export async function POST(request: NextRequest) {
 
   try {
     let fileSize: number;
+    let fileName: string;
     
     // Try to parse JSON body
     try {
       const body = await request.json();
       fileSize = body.fileSize;
+      fileName = body.fileName || 'video';
       console.log('File size from body:', fileSize);
+      console.log('File name:', fileName);
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
       return NextResponse.json(
@@ -39,17 +42,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Remove file extension from filename for display name
+    const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '');
+    console.log('Name for Cloudflare:', nameWithoutExtension);
+
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`;
     console.log('Requesting TUS URL from:', uploadUrl);
-    console.log('File size:', fileSize);
 
-    // Create TUS upload URL with proper Upload-Length header
+    // Prepare metadata for Cloudflare
+    const metadata = {
+      name: nameWithoutExtension,
+      requiresignedurls: 'false',
+    };
+
+    // Encode metadata as base64 for Upload-Metadata header
+    const metadataHeader = Object.entries(metadata)
+      .map(([key, value]) => `${key} ${Buffer.from(value).toString('base64')}`)
+      .join(',');
+
+    console.log('Metadata header:', metadataHeader);
+
+    // Create TUS upload URL with proper headers including metadata
     const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
         'Tus-Resumable': '1.0.0',
         'Upload-Length': fileSize.toString(),
+        'Upload-Metadata': metadataHeader,
       },
     });
 

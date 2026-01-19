@@ -84,7 +84,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
     setUploadPercentage(0);
 
     try {
-      // Step 1: Get TUS upload URL from Cloudflare with file size
+      // Step 1: Get TUS upload URL from Cloudflare with file size and filename
       const tusResponse = await fetch('/api/get-tus-url', {
         method: 'POST',
         headers: {
@@ -92,6 +92,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
         },
         body: JSON.stringify({
           fileSize: videoFile.size,
+          fileName: videoFile.name,
         }),
       });
 
