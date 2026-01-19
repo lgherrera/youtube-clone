@@ -49,18 +49,13 @@ export async function POST(request: NextRequest) {
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`;
     console.log('Requesting TUS URL from:', uploadUrl);
 
-    // Prepare metadata for Cloudflare
-    const metadata = {
-      name: nameWithoutExtension,
-      requiresignedurls: 'false',
-    };
+    // Prepare metadata for Cloudflare - fixed format
+    const uploadMetadata = [
+      `name ${Buffer.from(nameWithoutExtension).toString('base64')}`,
+      `requiresignedurls ${Buffer.from('false').toString('base64')}`,
+    ].join(',');
 
-    // Encode metadata as base64 for Upload-Metadata header
-    const metadataHeader = Object.entries(metadata)
-      .map(([key, value]) => `${key} ${Buffer.from(value).toString('base64')}`)
-      .join(',');
-
-    console.log('Metadata header:', metadataHeader);
+    console.log('Upload-Metadata header:', uploadMetadata);
 
     // Create TUS upload URL with proper headers including metadata
     const response = await fetch(uploadUrl, {
@@ -69,7 +64,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
         'Tus-Resumable': '1.0.0',
         'Upload-Length': fileSize.toString(),
-        'Upload-Metadata': metadataHeader,
+        'Upload-Metadata': uploadMetadata,
       },
     });
 
