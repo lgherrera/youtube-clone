@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
     const cloudflare_thumbnail_url = formData.get('cloudflare_thumbnail_url') as string;
     const duration_seconds = parseInt(formData.get('duration_seconds') as string);
     const categories = JSON.parse(formData.get('categories') as string);
+    const filename = formData.get('filename') as string; // Add this line
 
-    if (!title || !thumbnailFile || !sliderFile || !cloudflare_uid) {
+    if (!title || !thumbnailFile || !sliderFile || !cloudflare_uid || !filename) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
         cloudflare_playback_url,
         cloudflare_thumbnail_url,
         duration_seconds,
+        filename, // Add this line
       })
       .select()
       .single();

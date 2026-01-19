@@ -153,6 +153,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
       metadataFormData.append('cloudflare_thumbnail_url', thumbnailUrl);
       metadataFormData.append('duration_seconds', '0'); // Will be updated when video processes
       metadataFormData.append('categories', JSON.stringify(selectedCategories));
+      metadataFormData.append('filename', videoFile.name.replace(/\.[^/.]+$/, ''));
 
       const createResponse = await fetch('/api/videos/create', {
         method: 'POST',
