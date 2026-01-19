@@ -99,7 +99,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uid = uploadURL.split('/').pop();
+    // Extract UID properly - remove query parameters
+    const urlParts = uploadURL.split('/');
+    const lastPart = urlParts[urlParts.length - 1];
+    // Remove query parameters like ?tusv2=true
+    const uid = lastPart.split('?')[0];
+    
+    console.log('Full upload URL:', uploadURL);
     console.log('Extracted UID:', uid);
 
     return NextResponse.json({ uploadURL, uid });
