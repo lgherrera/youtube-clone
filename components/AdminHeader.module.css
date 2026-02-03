@@ -1,0 +1,120 @@
+/* components/AdminHeader.module.css */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #000;
+    width: 100%;
+  }
+  
+  .headerContent {
+    height: 65px;
+    max-width: 500px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    position: relative;
+  }
+  
+  .logoContainer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo {
+    height: 45px;
+    width: auto;
+    border-radius: 4px;
+  }
+  
+  .iconButton {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+  
+  .iconButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Overlay */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  
+  .overlayVisible {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 280px;
+    background-color: #1a1a1a;
+    z-index: 300;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+  
+  .sidebarHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #333;
+  }
+  
+  .sidebarTitle {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .sidebarNav {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+  }
+  
+  .sidebarLink {
+    color: #fff;
+    text-decoration: none;
+    padding: 1rem 1.5rem;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+  
+  .sidebarLink:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }

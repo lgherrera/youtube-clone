@@ -1,0 +1,90 @@
+/* app/(admin)/admin/page.module.css */
+
+.container {
+    padding: 1.5rem;
+  }
+  
+  .title {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  
+  .subtitle {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  /* Stats */
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  
+  .statCard {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+  }
+  
+  .statIcon {
+    color: #ef4444;
+    margin-bottom: 4px;
+  }
+  
+  .statValue {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  
+  .statLabel {
+    color: #888;
+    font-size: 12px;
+  }
+  
+  /* Quick Actions */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #fff;
+    transition: background 0.2s;
+  }
+  
+  .card:hover {
+    background: #252525;
+  }
+  
+  .cardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  
+  .cardDesc {
+    font-size: 13px;
+    color: #888;
+  }
