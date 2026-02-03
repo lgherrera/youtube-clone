@@ -9,12 +9,14 @@ interface IntroVideoMessageProps {
   videoUrl: string;
   posterUrl?: string;
   onVideoEnd?: () => void;
+  onVideoError?: () => void;
 }
 
 export default function IntroVideoMessage({ 
   videoUrl,
   posterUrl,
-  onVideoEnd 
+  onVideoEnd,
+  onVideoError
 }: IntroVideoMessageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,6 +30,7 @@ export default function IntroVideoMessage({
         setIsPlaying(true);
       } catch (error) {
         console.log('Play failed:', error);
+        onVideoError?.();
       }
     }
   };
@@ -47,6 +50,11 @@ export default function IntroVideoMessage({
     onVideoEnd?.();
   };
 
+  const handleError = () => {
+    console.log('Video error occurred');
+    onVideoError?.();
+  };
+
   return (
     <div className={styles.messageContainer}>
       <div className={styles.videoWrapper}>
@@ -58,6 +66,7 @@ export default function IntroVideoMessage({
           onPlay={handlePlay}
           onPause={handlePause}
           onEnded={handleEnded}
+          onError={handleError}
           controls
           playsInline
           preload="auto"
