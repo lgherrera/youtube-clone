@@ -14,6 +14,7 @@
   background: transparent;
   aspect-ratio: 3 / 4;
   overflow: visible;
+  margin-top: 10px;
 }
 
 .video {
@@ -79,7 +80,7 @@
 
 .closeButton {
   position: absolute;
-  top: -8px;
+  top: -18px;
   right: -18px;
   z-index: 4;
   background-color: rgba(80, 80, 80, 0.9);
