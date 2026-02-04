@@ -13,6 +13,7 @@ interface Girlfriend {
   age?: number;
   description?: string;
   image_url?: string;
+  avatar?: string;
   hello_url?: string;
   hello_poster_url?: string;
   default_scenario?: string;
@@ -206,7 +207,12 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </svg>
         </Link>
 
-        <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
+        <div className={styles.headerCenter}>
+          {girlfriend.avatar && (
+            <img src={girlfriend.avatar} alt={girlfriend.name} className={styles.avatar} />
+          )}
+          <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
+        </div>
 
         <button className={styles.iconButton}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

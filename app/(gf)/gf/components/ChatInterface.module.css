@@ -34,6 +34,24 @@
   letter-spacing: 0.5px;
 }
 
+.headerCenter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 0px solid #dc0042;
+  object-fit: cover;
+  margin-right: 6px;
+  margin-left: -26px;
+}
+
 .iconButton {
   background: rgba(255, 255, 255, 0.1);
   border: none;

@@ -12,7 +12,7 @@ interface ChatPageProps {
 async function getGirlfriend(slug: string) {
   const { data, error } = await supabase
     .from('girlfriends')
-    .select('id, name, slug, age, description, image_url, hello_url, hello_poster_url, default_scenario, opening_question')
+    .select('id, name, slug, age, description, image_url, avatar, hello_url, hello_poster_url, default_scenario, opening_question')
     .eq('slug', slug)
     .single();
 
@@ -57,6 +57,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
         age: girlfriend.age,
         description: girlfriend.description,
         image_url: girlfriend.image_url,
+        avatar: girlfriend.avatar,
         hello_url: girlfriend.hello_url,
         hello_poster_url: girlfriend.hello_poster_url,
         default_scenario: girlfriend.default_scenario,
