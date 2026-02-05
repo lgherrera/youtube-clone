@@ -30,6 +30,7 @@ interface ChatMessage {
 interface ChatRequest {
   girlfriendId: string;
   messages: ChatMessage[];
+  scenarioDescription?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -43,9 +44,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ChatRequest = await request.json();
-    const { girlfriendId, messages } = body;
+    const { girlfriendId, messages, scenarioDescription } = body;
 
-    console.log('Chat request received:', { girlfriendId, messageCount: messages?.length });
+    console.log('Chat request received:', { girlfriendId, messageCount: messages?.length, hasScenario: !!scenarioDescription });
 
     if (!girlfriendId) {
       return NextResponse.json(
@@ -85,8 +86,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Girlfriend found:', girlfriend.name);
 
-    // Build system prompt from girlfriend data
-    const systemPrompt = buildSystemPrompt(girlfriend as GirlfriendData);
+    // Build system prompt from girlfriend data with optional scenario
+    const systemPrompt = buildSystemPrompt(girlfriend as GirlfriendData, scenarioDescription);
     const modelConfig = getModelConfig(girlfriend as GirlfriendData);
 
     console.log('Using model:', modelConfig.model);

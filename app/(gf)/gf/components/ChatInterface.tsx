@@ -16,8 +16,18 @@ interface Girlfriend {
   avatar?: string;
   hello_url?: string;
   hello_poster_url?: string;
-  default_scenario?: string;
-  opening_question?: string;
+}
+
+interface Scenario {
+  id: string;
+  scene_name: string;
+  girlfriend_id: string;
+  description: string;
+  video_slug: string | null;
+  image_slug: string | null;
+  mood: string | null;
+  opener: string;
+  is_premium: boolean;
 }
 
 interface Message {
@@ -25,6 +35,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  imageUrl?: string; // Added for image messages
 }
 
 interface ChatInterfaceProps {
@@ -37,6 +48,13 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Scenario state
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
+  const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [imageGenerated, setImageGenerated] = useState(false); // Track if image was generated
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,24 +63,49 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Build opening messages from scenario + question (as separate messages)
+  // Fetch scenarios on mount
+  useEffect(() => {
+    const fetchScenarios = async () => {
+      try {
+        const response = await fetch(`/api/scenarios/${girlfriend.id}`);
+        const data = await response.json();
+        
+        if (data.scenarios && data.scenarios.length > 0) {
+          setScenarios(data.scenarios);
+          // Select random scenario
+          const randomIndex = Math.floor(Math.random() * data.scenarios.length);
+          setCurrentScenario(data.scenarios[randomIndex]);
+        }
+      } catch (err) {
+        console.error('Error fetching scenarios:', err);
+      } finally {
+        setIsLoadingScenarios(false);
+      }
+    };
+
+    fetchScenarios();
+  }, [girlfriend.id]);
+
+  // Build opening messages from scenario description + opener only
   const buildOpeningMessages = (): Message[] => {
     const messages: Message[] = [];
     
-    if (girlfriend.default_scenario) {
+    // Show description first (pink bubble)
+    if (currentScenario?.description) {
       messages.push({
-        id: 'scenario_' + generateMessageId(),
+        id: 'description_' + generateMessageId(),
         role: 'assistant',
-        content: girlfriend.default_scenario,
+        content: currentScenario.description,
         timestamp: new Date()
       });
     }
     
-    if (girlfriend.opening_question) {
+    // Then show opener (regular bubble)
+    if (currentScenario?.opener) {
       messages.push({
-        id: generateMessageId(),
+        id: 'opener_' + generateMessageId(),
         role: 'assistant',
-        content: girlfriend.opening_question,
+        content: currentScenario.opener,
         timestamp: new Date()
       });
     }
@@ -70,15 +113,16 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     return messages;
   };
 
-  // Show opening message on mount if no video
+  // Show opening message on mount if no video and scenario is loaded
   useEffect(() => {
-    if (!girlfriend.hello_url) {
+    if (!girlfriend.hello_url && currentScenario && !isLoadingScenarios && !hasInitialized) {
       const openingMessages = buildOpeningMessages();
       if (openingMessages.length > 0) {
         setMessages(openingMessages);
+        setHasInitialized(true);
       }
     }
-  }, []);
+  }, [currentScenario, isLoadingScenarios, hasInitialized]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -94,19 +138,83 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
 
   const handleVideoEnd = () => {
     setShowIntroVideo(false);
-    const openingMessages = buildOpeningMessages();
-    if (openingMessages.length > 0) {
-      setMessages(openingMessages);
+    if (!hasInitialized) {
+      const openingMessages = buildOpeningMessages();
+      if (openingMessages.length > 0) {
+        setMessages(openingMessages);
+        setHasInitialized(true);
+      }
     }
   };
 
   const handleVideoError = () => {
     console.error('Video failed to load:', girlfriend.hello_url);
     setShowIntroVideo(false);
-    const openingMessages = buildOpeningMessages();
-    if (openingMessages.length > 0) {
-      setMessages(openingMessages);
+    if (!hasInitialized) {
+      const openingMessages = buildOpeningMessages();
+      if (openingMessages.length > 0) {
+        setMessages(openingMessages);
+        setHasInitialized(true);
+      }
     }
+  };
+
+  const handleRandomScenario = () => {
+    if (scenarios.length <= 1) return; // Need at least 2 scenarios to shuffle
+    
+    // Get a different random scenario (not the current one)
+    let newScenario: Scenario;
+    do {
+      const randomIndex = Math.floor(Math.random() * scenarios.length);
+      newScenario = scenarios[randomIndex];
+    } while (newScenario.id === currentScenario?.id && scenarios.length > 1);
+    
+    setCurrentScenario(newScenario);
+    setImageGenerated(false); // Reset image generated flag
+    
+    // Reset messages with new scenario
+    const newMessages: Message[] = [];
+    
+    // Show description first (pink bubble)
+    if (newScenario.description) {
+      newMessages.push({
+        id: 'description_' + generateMessageId(),
+        role: 'assistant',
+        content: newScenario.description,
+        timestamp: new Date()
+      });
+    }
+    
+    // Then show opener (regular bubble)
+    if (newScenario.opener) {
+      newMessages.push({
+        id: 'opener_' + generateMessageId(),
+        role: 'assistant',
+        content: newScenario.opener,
+        timestamp: new Date()
+      });
+    }
+    
+    setMessages(newMessages);
+  };
+
+  const handleGenerateImage = () => {
+    if (!currentScenario?.image_slug) {
+      console.error('No image_slug available for current scenario');
+      return;
+    }
+
+    // Add image message to chat
+    const imageMessage: Message = {
+      id: 'image_' + generateMessageId(),
+      role: 'assistant',
+      content: '', // Empty content for image messages
+      timestamp: new Date(),
+      imageUrl: currentScenario.image_slug
+    };
+
+    setMessages(prev => [...prev, imageMessage]);
+    setImageGenerated(true); // Mark image as generated
   };
 
   const handleSendMessage = async () => {
@@ -142,6 +250,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         body: JSON.stringify({
           girlfriendId: girlfriend.id,
           messages: conversationHistory,
+          scenarioDescription: currentScenario?.description,
         }),
       });
 
@@ -234,19 +343,59 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           />
         )}
         
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={
-              message.role === 'user' 
-                ? styles.messageBubbleRight 
-                : message.id.startsWith('scenario_')
-                  ? styles.messageBubbleScenario
-                  : styles.messageBubbleLeft
-            }
-          >
-            {formatMessageContent(message.content)}
-          </div>
+        {messages.map((message, index) => (
+          <React.Fragment key={message.id}>
+            {/* Image message */}
+            {message.imageUrl ? (
+              <div className={styles.imageMessage}>
+                <img 
+                  src={message.imageUrl} 
+                  alt="Generated scenario" 
+                  className={styles.scenarioImage}
+                />
+              </div>
+            ) : (
+              /* Text message */
+              <div
+                className={
+                  message.role === 'user' 
+                    ? styles.messageBubbleRight 
+                    : message.id.startsWith('description_')
+                      ? styles.messageBubbleScenario
+                      : styles.messageBubbleLeft
+                }
+              >
+                {/* Shuffle button inside description bubble */}
+                {message.id.startsWith('description_') && scenarios.length > 1 && (
+                  <button 
+                    className={styles.shuffleButton}
+                    onClick={handleRandomScenario}
+                    title="Cambiar escenario"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                  </button>
+                )}
+                {formatMessageContent(message.content)}
+              </div>
+            )}
+            
+            {/* Show image generator icon after description message if not generated yet */}
+            {message.id.startsWith('description_') && !imageGenerated && currentScenario?.image_slug && (
+              <button 
+                className={styles.imageGeneratorButton}
+                onClick={handleGenerateImage}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span>Generate Image</span>
+              </button>
+            )}
+          </React.Fragment>
         ))}
 
         {/* Typing indicator */}
