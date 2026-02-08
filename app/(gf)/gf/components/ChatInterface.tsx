@@ -48,6 +48,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Scenario state
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -323,7 +324,10 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
         </div>
 
-        <button className={styles.iconButton}>
+        <button 
+          className={styles.iconButton}
+          onClick={() => setIsSidebarOpen(true)}
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="12" x2="21" y2="12"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -331,6 +335,64 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </svg>
         </button>
       </header>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className={styles.sidebarOverlay}
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+        <div className={styles.sidebarHeader}>
+          <h2 className={styles.sidebarTitle}>Profile</h2>
+          <button 
+            className={styles.sidebarClose}
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className={styles.sidebarContent}>
+          {/* Profile Section */}
+          <div className={styles.profileSection}>
+            <p className={styles.profileDescription}>
+              {girlfriend.description || 'No description available.'}
+            </p>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className={styles.sidebarNav}>
+            <Link 
+              href={`/gf/${girlfriend.slug}/videos`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Videos
+            </Link>
+            <Link 
+              href={`/gf/${girlfriend.slug}/images`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Imagenes
+            </Link>
+            <Link 
+              href={`/gf/${girlfriend.slug}/audio`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Audios
+            </Link>
+          </nav>
+        </div>
+      </div>
 
       {/* Chat Area */}
       <div className={styles.chatArea}>
