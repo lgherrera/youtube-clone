@@ -118,7 +118,7 @@ export default function AudioClient({ girlfriend, audios }: AudioClientProps) {
                 </div>
 
                 <audio
-                  ref={(el) => (audioRefs.current[audio.id] = el)}
+                  ref={(el) => { audioRefs.current[audio.id] = el; }}
                   src={audio.audio_url}
                   onEnded={handleAudioEnded}
                   onError={() => console.error('Audio failed to load:', audio.audio_url)}
