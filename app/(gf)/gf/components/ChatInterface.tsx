@@ -25,6 +25,7 @@ interface Scenario {
   description: string;
   video_slug: string | null;
   image_slug: string | null;
+  audio_slug: string | null;
   mood: string | null;
   opener: string;
   is_premium: boolean;
@@ -35,7 +36,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  imageUrl?: string; // Added for image messages
+  imageUrl?: string;
 }
 
 interface ChatInterfaceProps {
@@ -48,17 +49,18 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Scenario state
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
   const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [imageGenerated, setImageGenerated] = useState(false); // Track if image was generated
+  const [imageGenerated, setImageGenerated] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const generateMessageId = () => {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -86,6 +88,16 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
 
     fetchScenarios();
   }, [girlfriend.id]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   // Build opening messages from scenario description + opener only
   const buildOpeningMessages = (): Message[] => {
@@ -161,9 +173,15 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   };
 
   const handleRandomScenario = () => {
-    if (scenarios.length <= 1) return; // Need at least 2 scenarios to shuffle
+    if (scenarios.length <= 1) return;
     
-    // Get a different random scenario (not the current one)
+    // Stop any playing audio when switching scenarios
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlayingAudio(false);
+    }
+    
     let newScenario: Scenario;
     do {
       const randomIndex = Math.floor(Math.random() * scenarios.length);
@@ -171,12 +189,10 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     } while (newScenario.id === currentScenario?.id && scenarios.length > 1);
     
     setCurrentScenario(newScenario);
-    setImageGenerated(false); // Reset image generated flag
+    setImageGenerated(false);
     
-    // Reset messages with new scenario
     const newMessages: Message[] = [];
     
-    // Show description first (pink bubble)
     if (newScenario.description) {
       newMessages.push({
         id: 'description_' + generateMessageId(),
@@ -186,7 +202,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
       });
     }
     
-    // Then show opener (regular bubble)
     if (newScenario.opener) {
       newMessages.push({
         id: 'opener_' + generateMessageId(),
@@ -199,23 +214,62 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     setMessages(newMessages);
   };
 
+  const handlePlayAudio = () => {
+    if (!currentScenario?.audio_slug) {
+      console.error('No audio_slug available for current scenario');
+      return;
+    }
+    
+    // If already playing, pause it
+    if (isPlayingAudio && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+      return;
+    }
+    
+    // Create new audio or reuse existing
+    if (!audioRef.current) {
+      audioRef.current = new Audio(currentScenario.audio_slug);
+      
+      // Set up event listeners
+      audioRef.current.addEventListener('ended', () => {
+        setIsPlayingAudio(false);
+      });
+      
+      audioRef.current.addEventListener('error', (e) => {
+        console.error('Error playing audio:', e);
+        setIsPlayingAudio(false);
+        setError('Error al reproducir el audio');
+      });
+    }
+    
+    // Play audio
+    audioRef.current.play()
+      .then(() => {
+        setIsPlayingAudio(true);
+      })
+      .catch((error) => {
+        console.error('Error playing audio:', error);
+        setError('Error al reproducir el audio');
+      });
+  };
+
   const handleGenerateImage = () => {
     if (!currentScenario?.image_slug) {
       console.error('No image_slug available for current scenario');
       return;
     }
 
-    // Add image message to chat
     const imageMessage: Message = {
       id: 'image_' + generateMessageId(),
       role: 'assistant',
-      content: '', // Empty content for image messages
+      content: '',
       timestamp: new Date(),
       imageUrl: currentScenario.image_slug
     };
 
     setMessages(prev => [...prev, imageMessage]);
-    setImageGenerated(true); // Mark image as generated
+    setImageGenerated(true);
   };
 
   const handleSendMessage = async () => {
@@ -224,7 +278,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
 
     setError(null);
 
-    // Add user message immediately
     const userMessage: Message = {
       id: generateMessageId(),
       role: 'user',
@@ -237,7 +290,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      // Prepare conversation history for API
       const conversationHistory = [...messages, userMessage].map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -265,7 +317,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         throw new Error('No message received from AI');
       }
 
-      // Add assistant response
       const assistantMessage: Message = {
         id: generateMessageId(),
         role: 'assistant',
@@ -292,7 +343,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     }
   };
 
-  // Format message content with actions in *asterisks*
   const formatMessageContent = (content: string) => {
     const parts = content.split(/(\*[^*]+\*)/g);
     return parts.map((part, index) => {
@@ -324,10 +374,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
         </div>
 
-        <button 
-          className={styles.iconButton}
-          onClick={() => setIsSidebarOpen(true)}
-        >
+        <button className={styles.iconButton}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="12" x2="21" y2="12"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -335,64 +382,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </svg>
         </button>
       </header>
-
-      {/* Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className={styles.sidebarOverlay}
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
-        <div className={styles.sidebarHeader}>
-          <h2 className={styles.sidebarTitle}>Profile</h2>
-          <button 
-            className={styles.sidebarClose}
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className={styles.sidebarContent}>
-          {/* Profile Section */}
-          <div className={styles.profileSection}>
-            <p className={styles.profileDescription}>
-              {girlfriend.description || 'No description available.'}
-            </p>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className={styles.sidebarNav}>
-            <Link 
-              href={`/gf/${girlfriend.slug}/videos`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Videos
-            </Link>
-            <Link 
-              href={`/gf/${girlfriend.slug}/images`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Imagenes
-            </Link>
-            <Link 
-              href={`/gf/${girlfriend.slug}/audio`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Audios
-            </Link>
-          </nav>
-        </div>
-      </div>
 
       {/* Chat Area */}
       <div className={styles.chatArea}>
@@ -407,7 +396,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         
         {messages.map((message, index) => (
           <React.Fragment key={message.id}>
-            {/* Image message */}
             {message.imageUrl ? (
               <div className={styles.imageMessage}>
                 <img 
@@ -417,7 +405,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                 />
               </div>
             ) : (
-              /* Text message */
               <div
                 className={
                   message.role === 'user' 
@@ -427,7 +414,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                       : styles.messageBubbleLeft
                 }
               >
-                {/* Shuffle button inside description bubble */}
+                {/* Shuffle button - top right */}
                 {message.id.startsWith('description_') && scenarios.length > 1 && (
                   <button 
                     className={styles.shuffleButton}
@@ -439,11 +426,30 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                     </svg>
                   </button>
                 )}
+                
+                {/* Play/Pause button - bottom right (only if audio_slug exists) */}
+                {message.id.startsWith('description_') && currentScenario?.audio_slug && (
+                  <button 
+                    className={`${styles.playButton} ${isPlayingAudio ? styles.playing : ''}`}
+                    onClick={handlePlayAudio}
+                    title={isPlayingAudio ? "Pausar audio" : "Reproducir audio"}
+                  >
+                    {isPlayingAudio ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    )}
+                  </button>
+                )}
+                
                 {formatMessageContent(message.content)}
               </div>
             )}
             
-            {/* Show image generator icon after description message if not generated yet */}
             {message.id.startsWith('description_') && !imageGenerated && currentScenario?.image_slug && (
               <button 
                 className={styles.imageGeneratorButton}
@@ -460,7 +466,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </React.Fragment>
         ))}
 
-        {/* Typing indicator */}
         {isLoading && (
           <div className={styles.messageBubbleLeft}>
             <div className={styles.typingIndicator}>
@@ -471,7 +476,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </div>
         )}
 
-        {/* Error message */}
         {error && (
           <div className={styles.errorMessage}>
             {error}
