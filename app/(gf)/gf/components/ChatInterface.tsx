@@ -37,6 +37,7 @@ interface Message {
   content: string;
   timestamp: Date;
   imageUrl?: string;
+  audioUrl?: string;
 }
 
 interface ChatInterfaceProps {
@@ -49,7 +50,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Scenario state
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -58,10 +58,15 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [imageGenerated, setImageGenerated] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  
+  // Audio playback state - track which message is playing
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [audioLoadingMessageId, setAudioLoadingMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const messageAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   const generateMessageId = () => {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -97,6 +102,8 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      messageAudioRefs.current.forEach(audio => audio.pause());
+      messageAudioRefs.current.clear();
     };
   }, []);
 
@@ -183,6 +190,11 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
       setIsPlayingAudio(false);
     }
     
+    // Stop any message audio
+    messageAudioRefs.current.forEach(audio => audio.pause());
+    messageAudioRefs.current.clear();
+    setPlayingMessageId(null);
+    
     let newScenario: Scenario;
     do {
       const randomIndex = Math.floor(Math.random() * scenarios.length);
@@ -255,6 +267,94 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
       });
   };
 
+  const handlePlayMessageAudio = async (messageId: string, audioUrl?: string, messageContent?: string) => {
+    // If this message is already playing, pause it
+    if (playingMessageId === messageId) {
+      const audio = messageAudioRefs.current.get(messageId);
+      if (audio) {
+        audio.pause();
+        setPlayingMessageId(null);
+      }
+      return;
+    }
+
+    // Pause any currently playing message audio
+    if (playingMessageId) {
+      const currentAudio = messageAudioRefs.current.get(playingMessageId);
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+    }
+
+    // If audio URL exists, play it
+    if (audioUrl) {
+      let audio = messageAudioRefs.current.get(messageId);
+      if (!audio) {
+        audio = new Audio(audioUrl);
+        messageAudioRefs.current.set(messageId, audio);
+
+        audio.addEventListener('ended', () => {
+          setPlayingMessageId(null);
+        });
+
+        audio.addEventListener('error', (e) => {
+          console.error('Error playing message audio:', e);
+          setPlayingMessageId(null);
+        });
+      }
+
+      try {
+        await audio.play();
+        setPlayingMessageId(messageId);
+      } catch (error) {
+        console.error('Error playing audio:', error);
+      }
+    } 
+    // If no audio URL but we have content, generate it
+    else if (messageContent) {
+      setAudioLoadingMessageId(messageId);
+      
+      try {
+        const response = await fetch('/api/elevenlabs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: messageContent }),
+        });
+
+        const data = await response.json();
+
+        if (data.audioUrl) {
+          // Update message with audio URL
+          setMessages(prev => prev.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, audioUrl: data.audioUrl }
+              : msg
+          ));
+
+          // Create and play audio
+          const audio = new Audio(data.audioUrl);
+          messageAudioRefs.current.set(messageId, audio);
+
+          audio.addEventListener('ended', () => {
+            setPlayingMessageId(null);
+          });
+
+          audio.addEventListener('error', (e) => {
+            console.error('Error playing message audio:', e);
+            setPlayingMessageId(null);
+          });
+
+          await audio.play();
+          setPlayingMessageId(messageId);
+        }
+      } catch (error) {
+        console.error('Error generating audio:', error);
+      } finally {
+        setAudioLoadingMessageId(null);
+      }
+    }
+  };
+
   const handleGenerateImage = () => {
     if (!currentScenario?.image_slug) {
       console.error('No image_slug available for current scenario');
@@ -296,7 +396,8 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         content: msg.content,
       }));
 
-      const response = await fetch('/api/chat', {
+      // Start both requests in parallel for lower latency
+      const chatPromise = fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -308,24 +409,49 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         }),
       });
 
-      const data = await response.json();
+      const chatResponse = await chatPromise;
+      const chatData = await chatResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || `Error ${response.status}: Failed to get response`);
+      if (!chatResponse.ok) {
+        throw new Error(chatData.error || `Error ${chatResponse.status}: Failed to get response`);
       }
 
-      if (!data.message) {
+      if (!chatData.message) {
         throw new Error('No message received from AI');
       }
 
+      const messageId = generateMessageId();
+
+      // Add message immediately without audio
       const assistantMessage: Message = {
-        id: generateMessageId(),
+        id: messageId,
         role: 'assistant',
-        content: data.message,
+        content: chatData.message,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Generate audio in background
+      fetch('/api/elevenlabs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: chatData.message }),
+      })
+        .then(res => res.json())
+        .then(audioData => {
+          if (audioData.audioUrl) {
+            // Update message with audio URL
+            setMessages(prev => prev.map(msg => 
+              msg.id === messageId 
+                ? { ...msg, audioUrl: audioData.audioUrl }
+                : msg
+            ));
+          }
+        })
+        .catch(err => {
+          console.error('Error generating audio:', err);
+        });
 
     } catch (err) {
       console.error('Chat error:', err);
@@ -375,10 +501,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
         </div>
 
-        <button 
-          className={styles.iconButton}
-          onClick={() => setIsSidebarOpen(true)}
-        >
+        <button className={styles.iconButton}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="12" x2="21" y2="12"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -386,64 +509,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </svg>
         </button>
       </header>
-
-      {/* Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className={styles.sidebarOverlay}
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
-        <div className={styles.sidebarHeader}>
-          <h2 className={styles.sidebarTitle}>Profile</h2>
-          <button 
-            className={styles.sidebarClose}
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className={styles.sidebarContent}>
-          {/* Profile Section */}
-          <div className={styles.profileSection}>
-            <p className={styles.profileDescription}>
-              {girlfriend.description || 'No description available.'}
-            </p>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className={styles.sidebarNav}>
-            <Link 
-              href={`/gf/${girlfriend.slug}/videos`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Videos
-            </Link>
-            <Link 
-              href={`/gf/${girlfriend.slug}/images`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Imagenes
-            </Link>
-            <Link 
-              href={`/gf/${girlfriend.slug}/audio`}
-              className={styles.sidebarLink}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Audios
-            </Link>
-          </nav>
-        </div>
-      </div>
 
       {/* Chat Area */}
       <div className={styles.chatArea}>
@@ -489,7 +554,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                   </button>
                 )}
                 
-                {/* Play/Pause button - bottom right (only if audio_slug exists) */}
+                {/* Play/Pause button for scenario audio - bottom right (only if audio_slug exists) */}
                 {message.id.startsWith('description_') && currentScenario?.audio_slug && (
                   <button 
                     className={`${styles.playButton} ${isPlayingAudio ? styles.playing : ''}`}
@@ -509,6 +574,31 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                 )}
                 
                 {formatMessageContent(message.content)}
+                
+                {/* Play button for regular assistant messages */}
+                {message.role === 'assistant' && !message.id.startsWith('description_') && (
+                  <button 
+                    className={`${styles.messagePlayButton} ${playingMessageId === message.id ? styles.playing : ''}`}
+                    onClick={() => handlePlayMessageAudio(message.id, message.audioUrl, message.content)}
+                    disabled={audioLoadingMessageId === message.id}
+                    title={playingMessageId === message.id ? "Pausar" : "Reproducir"}
+                  >
+                    {audioLoadingMessageId === message.id ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className={styles.spinner}>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
+                        <path d="M12 2a10 10 0 0 1 10 10" fill="none" stroke="currentColor" strokeWidth="4"/>
+                      </svg>
+                    ) : playingMessageId === message.id ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    )}
+                  </button>
+                )}
               </div>
             )}
             
