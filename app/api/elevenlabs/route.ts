@@ -22,10 +22,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Generating audio with ElevenLabs...');
     
-    // Correct method for the new SDK
+    // Correct method for the new SDK with camelCase property
     const audio = await elevenlabs.textToSpeech.convert('IOyj8WtBHdke2FjQgGAr', {
       text,
-      model_id: 'eleven_turbo_v2_5',
+      modelId: 'eleven_turbo_v2_5',
     });
 
     // Convert audio stream to base64
