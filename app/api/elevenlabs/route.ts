@@ -22,17 +22,22 @@ export async function POST(request: NextRequest) {
 
     console.log('Generating audio with ElevenLabs...');
     
-    // Correct method for the new SDK with camelCase property
+    // Generate audio and get ReadableStream
     const audio = await elevenlabs.textToSpeech.convert('IOyj8WtBHdke2FjQgGAr', {
       text,
       modelId: 'eleven_turbo_v2_5',
     });
 
-    // Convert audio stream to base64
-    const chunks: Buffer[] = [];
-    for await (const chunk of audio) {
-      chunks.push(chunk);
+    // Convert ReadableStream to Buffer
+    const reader = audio.getReader();
+    const chunks: Uint8Array[] = [];
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
     }
+    
     const audioBuffer = Buffer.concat(chunks);
     console.log('Audio buffer size:', audioBuffer.length, 'bytes');
     
