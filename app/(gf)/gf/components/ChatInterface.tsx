@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import IntroVideoMessage from './IntroVideoMessage';
 import styles from './ChatInterface.module.css';
+import { useSession } from '@/lib/hooks/useSession';
 
 interface Girlfriend {
   id: string;
@@ -48,6 +49,8 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
+  const sessionId = useSession();
+  
   const [showIntroVideo, setShowIntroVideo] = useState(!!girlfriend.hello_url);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
