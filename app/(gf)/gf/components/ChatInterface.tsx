@@ -558,6 +558,13 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         <div className={styles.sidebarContent}>
           {/* Profile Section */}
           <div className={styles.profileSection}>
+            {girlfriend.image_url && (
+              <img 
+                src={girlfriend.image_url} 
+                alt={girlfriend.name}
+                className={styles.profileImage}
+              />
+            )}
             <p className={styles.profileDescription}>
               {girlfriend.description || 'No description available.'}
             </p>
