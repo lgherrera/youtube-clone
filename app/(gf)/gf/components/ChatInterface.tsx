@@ -621,18 +621,14 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                   className={styles.scenarioImage}
                 />
               </div>
-            ) : (
-              <div
-                className={
-                  message.role === 'user' 
-                    ? styles.messageBubbleRight 
-                    : message.id.startsWith('description_')
-                      ? styles.messageBubbleScenario
-                      : styles.messageBubbleLeft
-                }
-              >
+            ) : message.role === 'user' ? (
+              <div className={styles.messageBubbleRight}>
+                {formatMessageContent(message.content)}
+              </div>
+            ) : message.id.startsWith('description_') ? (
+              <div className={styles.messageBubbleScenario}>
                 {/* Shuffle button - top right */}
-                {message.id.startsWith('description_') && scenarios.length > 1 && (
+                {scenarios.length > 1 && (
                   <button 
                     className={styles.shuffleButton}
                     onClick={handleRandomScenario}
@@ -644,8 +640,8 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                   </button>
                 )}
                 
-                {/* Play/Pause button for scenario audio - bottom right (only if audio_slug exists) */}
-                {message.id.startsWith('description_') && currentScenario?.audio_slug && (
+                {/* Play/Pause button for scenario audio - bottom right */}
+                {currentScenario?.audio_slug && (
                   <button 
                     className={`${styles.playButton} ${isPlayingAudio ? styles.playing : ''}`}
                     onClick={handlePlayAudio}
@@ -664,9 +660,15 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                 )}
                 
                 {formatMessageContent(message.content)}
+              </div>
+            ) : (
+              // Regular assistant message with button below
+              <div className={styles.messageWithButton}>
+                <div className={styles.messageBubbleLeft}>
+                  {formatMessageContent(message.content)}
+                </div>
                 
-                {/* Play button for regular assistant messages */}
-                {message.role === 'assistant' && !message.id.startsWith('description_') && girlfriend.voice_id && (
+                {girlfriend.voice_id && (
                   <button 
                     className={`${styles.messagePlayButton} ${playingMessageId === message.id ? styles.playing : ''}`}
                     onClick={() => handlePlayMessageAudio(message.id, message.audioUrl, message.content)}

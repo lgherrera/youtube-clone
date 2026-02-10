@@ -207,17 +207,30 @@
   overflow-y: auto;
 }
 
+/* Wrapper for message + button */
+.messageWithButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 80%;
+  gap: 6px;
+}
+
 .messageBubbleLeft {
   background-color: rgba(85, 107, 95, 0.4); 
   color: #e0e0e0;
   padding: 12px 16px;
   border-radius: 12px;
   border-top-left-radius: 2px; 
-  max-width: 80%;
   font-size: 0.95rem;
   line-height: 1.4;
-  align-self: flex-start;
   backdrop-filter: blur(4px);
+  align-self: flex-start;
+}
+
+/* Make message bubbles inside messageWithButton fill the container */
+.messageWithButton .messageBubbleLeft {
+  width: 100%;
 }
 
 .messageBubbleScenario {
@@ -262,7 +275,7 @@
   transform: rotate(180deg) scale(0.95);
 }
 
-/* Play button - bottom right corner */
+/* Play button - bottom right corner (for scenario description bubble) */
 .playButton {
   position: absolute;
   bottom: 8px;
@@ -288,6 +301,54 @@
 
 .playButton:active {
   transform: scale(0.95);
+}
+
+/* Play button for regular assistant messages - positioned below the bubble, left-aligned, pink */
+.messagePlayButton {
+  background: rgba(227, 0, 71, 0.3);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #e30047;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.messagePlayButton:hover:not(:disabled) {
+  background: rgba(227, 0, 71, 0.5);
+  transform: scale(1.1);
+}
+
+.messagePlayButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.messagePlayButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.messagePlayButton.playing {
+  background: rgba(227, 0, 71, 0.5);
+}
+
+/* Spinner animation for loading audio */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Image message container */
