@@ -16,6 +16,9 @@ interface Girlfriend {
   avatar?: string;
   hello_url?: string;
   hello_poster_url?: string;
+  voice_provider?: string;
+  voice_model?: string;
+  voice_id?: string;
 }
 
 interface Scenario {
@@ -50,6 +53,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Scenario state
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -312,13 +316,23 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
     } 
     // If no audio URL but we have content, generate it
     else if (messageContent) {
+      // Only generate audio if girlfriend has voice settings
+      if (!girlfriend.voice_id) {
+        console.warn('No voice_id configured for this girlfriend');
+        return;
+      }
+
       setAudioLoadingMessageId(messageId);
       
       try {
         const response = await fetch('/api/elevenlabs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: messageContent }),
+          body: JSON.stringify({ 
+            text: messageContent,
+            voiceId: girlfriend.voice_id,
+            voiceModel: girlfriend.voice_model || 'eleven_turbo_v2_5',
+          }),
         });
 
         const data = await response.json();
@@ -396,8 +410,8 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         content: msg.content,
       }));
 
-      // Start both requests in parallel for lower latency
-      const chatPromise = fetch('/api/chat', {
+      // Start chat request
+      const chatResponse = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -409,7 +423,6 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         }),
       });
 
-      const chatResponse = await chatPromise;
       const chatData = await chatResponse.json();
 
       if (!chatResponse.ok) {
@@ -432,26 +445,32 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Generate audio in background
-      fetch('/api/elevenlabs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: chatData.message }),
-      })
-        .then(res => res.json())
-        .then(audioData => {
-          if (audioData.audioUrl) {
-            // Update message with audio URL
-            setMessages(prev => prev.map(msg => 
-              msg.id === messageId 
-                ? { ...msg, audioUrl: audioData.audioUrl }
-                : msg
-            ));
-          }
+      // Generate audio in background only if girlfriend has voice settings
+      if (girlfriend.voice_id) {
+        fetch('/api/elevenlabs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text: chatData.message,
+            voiceId: girlfriend.voice_id,
+            voiceModel: girlfriend.voice_model || 'eleven_turbo_v2_5',
+          }),
         })
-        .catch(err => {
-          console.error('Error generating audio:', err);
-        });
+          .then(res => res.json())
+          .then(audioData => {
+            if (audioData.audioUrl) {
+              // Update message with audio URL
+              setMessages(prev => prev.map(msg => 
+                msg.id === messageId 
+                  ? { ...msg, audioUrl: audioData.audioUrl }
+                  : msg
+              ));
+            }
+          })
+          .catch(err => {
+            console.error('Error generating audio:', err);
+          });
+      }
 
     } catch (err) {
       console.error('Chat error:', err);
@@ -501,7 +520,10 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           <h1 className={styles.headerTitle}>{girlfriend.name}</h1>
         </div>
 
-        <button className={styles.iconButton}>
+        <button 
+          className={styles.iconButton}
+          onClick={() => setIsSidebarOpen(true)}
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="12" x2="21" y2="12"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -509,6 +531,64 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
           </svg>
         </button>
       </header>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className={styles.sidebarOverlay}
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+        <div className={styles.sidebarHeader}>
+          <h2 className={styles.sidebarTitle}>Profile</h2>
+          <button 
+            className={styles.sidebarClose}
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className={styles.sidebarContent}>
+          {/* Profile Section */}
+          <div className={styles.profileSection}>
+            <p className={styles.profileDescription}>
+              {girlfriend.description || 'No description available.'}
+            </p>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className={styles.sidebarNav}>
+            <Link 
+              href={`/gf/${girlfriend.slug}/videos`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Videos
+            </Link>
+            <Link 
+              href={`/gf/${girlfriend.slug}/images`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Imagenes
+            </Link>
+            <Link 
+              href={`/gf/${girlfriend.slug}/audio`}
+              className={styles.sidebarLink}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              Audios
+            </Link>
+          </nav>
+        </div>
+      </div>
 
       {/* Chat Area */}
       <div className={styles.chatArea}>
@@ -576,7 +656,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
                 {formatMessageContent(message.content)}
                 
                 {/* Play button for regular assistant messages */}
-                {message.role === 'assistant' && !message.id.startsWith('description_') && (
+                {message.role === 'assistant' && !message.id.startsWith('description_') && girlfriend.voice_id && (
                   <button 
                     className={`${styles.messagePlayButton} ${playingMessageId === message.id ? styles.playing : ''}`}
                     onClick={() => handlePlayMessageAudio(message.id, message.audioUrl, message.content)}

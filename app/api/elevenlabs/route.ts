@@ -10,8 +10,10 @@ export async function POST(request: NextRequest) {
   try {
     console.log('ElevenLabs API called');
     
-    const { text } = await request.json();
+    const { text, voiceId, voiceModel } = await request.json();
     console.log('Text received:', text?.substring(0, 50) + '...');
+    console.log('Voice ID:', voiceId);
+    console.log('Voice Model:', voiceModel);
 
     if (!text) {
       return NextResponse.json(
@@ -20,12 +22,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!voiceId) {
+      return NextResponse.json(
+        { error: 'Voice ID is required' },
+        { status: 400 }
+      );
+    }
+
     console.log('Generating audio with ElevenLabs...');
     
-    // Generate audio and get ReadableStream
-    const audio = await elevenlabs.textToSpeech.convert('IOyj8WtBHdke2FjQgGAr', {
+    // Use the provided voiceId and voiceModel (with fallback)
+    const audio = await elevenlabs.textToSpeech.convert(voiceId, {
       text,
-      modelId: 'eleven_turbo_v2_5',
+      modelId: voiceModel || 'eleven_turbo_v2_5',
     });
 
     // Convert ReadableStream to Buffer
