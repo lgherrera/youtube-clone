@@ -44,11 +44,8 @@ export async function POST(req: Request) {
       ...messages
     ];
 
-    // Build model string from model_provider and model_name
-    // Example: model_provider="openai", model_name="gpt-4o-mini" → "openai/gpt-4o-mini"
-    const modelString = girlfriend.model_name 
-      ? `${girlfriend.model_provider || 'openai'}/${girlfriend.model_name}`
-      : 'openai/gpt-4o-mini'; // Default fallback
+    // Use model_name directly - it already has the full format like "x-ai/grok-4.1-fast"
+    const modelString = girlfriend.model_name || 'x-ai/grok-4.1-fast';
 
     // Log request details
     console.log('Making OpenRouter request with:', {
