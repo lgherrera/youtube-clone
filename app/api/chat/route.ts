@@ -1,152 +1,122 @@
 // app/api/chat/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { buildSystemPrompt, getModelConfig, GirlfriendData } from '@/lib/prompts';
+import { buildSystemPrompt } from '@/lib/prompts';
 
-// Check for required environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const openrouterKey = process.env.OPENROUTER_API_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-}
-
-if (!openrouterKey) {
-  console.error('Missing OPENROUTER_API_KEY environment variable');
-}
-
-// Use service role for server-side API routes (bypasses RLS)
-const supabaseAdmin = createClient(
-  supabaseUrl || '',
-  supabaseServiceKey || ''
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-interface ChatRequest {
-  girlfriendId: string;
-  messages: ChatMessage[];
-  scenarioDescription?: string;
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // Check API key first
-    if (!openrouterKey) {
+    const { messages, girlfriendId, sessionId } = await req.json();
+
+    // Validate required fields
+    if (!messages || !girlfriendId || !sessionId) {
       return NextResponse.json(
-        { error: 'OpenRouter API key not configured' },
-        { status: 500 }
-      );
-    }
-
-    const body: ChatRequest = await request.json();
-    const { girlfriendId, messages, scenarioDescription } = body;
-
-    console.log('Chat request received:', { girlfriendId, messageCount: messages?.length, hasScenario: !!scenarioDescription });
-
-    if (!girlfriendId) {
-      return NextResponse.json(
-        { error: 'girlfriendId is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json(
-        { error: 'messages array is required' },
+        { error: 'Missing required fields: messages, girlfriendId, sessionId' },
         { status: 400 }
       );
     }
 
     // Fetch girlfriend data from Supabase
-    const { data: girlfriend, error: dbError } = await supabaseAdmin
+    const { data: girlfriend, error: girlfriendError } = await supabase
       .from('girlfriends')
       .select('*')
       .eq('id', girlfriendId)
       .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.json(
-        { error: `Database error: ${dbError.message}` },
-        { status: 500 }
-      );
-    }
-
-    if (!girlfriend) {
+    if (girlfriendError || !girlfriend) {
       return NextResponse.json(
         { error: 'Girlfriend not found' },
         { status: 404 }
       );
     }
 
-    console.log('Girlfriend found:', girlfriend.name);
-
-    // Build system prompt from girlfriend data with optional scenario
-    const systemPrompt = buildSystemPrompt(girlfriend as GirlfriendData, scenarioDescription);
-    const modelConfig = getModelConfig(girlfriend as GirlfriendData);
-
-    console.log('Using model:', modelConfig.model);
+    // Build system prompt with girlfriend personality
+    const systemPrompt = buildSystemPrompt(girlfriend);
 
     // Prepare messages for OpenRouter
-    const openRouterMessages: ChatMessage[] = [
+    const apiMessages = [
       { role: 'system', content: systemPrompt },
-      ...messages.filter(m => m.role !== 'system')
+      ...messages
     ];
 
     // Call OpenRouter API
-    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const startTime = Date.now();
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openrouterKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-        'X-Title': 'GF Chat App',
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'AI Girlfriend Chat'
       },
       body: JSON.stringify({
-        model: modelConfig.model,
-        messages: openRouterMessages,
-        temperature: modelConfig.temperature,
-        max_tokens: modelConfig.max_tokens,
-      }),
+        model: girlfriend.model || 'anthropic/claude-3.5-sonnet',
+        messages: apiMessages,
+        temperature: 0.8,
+        max_tokens: 800
+      })
     });
 
-    if (!openRouterResponse.ok) {
-      const errorText = await openRouterResponse.text();
-      console.error('OpenRouter error:', openRouterResponse.status, errorText);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenRouter API error:', errorData);
       return NextResponse.json(
-        { error: `OpenRouter error: ${openRouterResponse.status} - ${errorText}` },
-        { status: 500 }
+        { error: 'Failed to get response from AI' },
+        { status: response.status }
       );
     }
 
-    const aiResponse = await openRouterResponse.json();
-    
-    const assistantMessage = aiResponse.choices?.[0]?.message?.content;
+    const data = await response.json();
+    const generationTime = Date.now() - startTime;
 
-    if (!assistantMessage) {
-      console.error('No message in AI response:', aiResponse);
-      return NextResponse.json(
-        { error: 'No response from AI' },
-        { status: 500 }
-      );
-    }
+    // Extract metadata from OpenRouter response
+    const usage = data.usage;
+    const metadata = {
+      session_id: sessionId,
+      girlfriend_id: girlfriendId,
+      model_used: data.model,
+      prompt_tokens: usage?.prompt_tokens || null,
+      completion_tokens: usage?.completion_tokens || null,
+      total_tokens: usage?.total_tokens || null,
+      prompt_cost: usage?.prompt_cost || null,
+      completion_cost: usage?.completion_cost || null,
+      total_cost: usage?.total_cost || null,
+      generation_time_ms: generationTime,
+      finish_reason: data.choices?.[0]?.finish_reason || null,
+      raw_metadata: data
+    };
 
-    console.log('AI response received successfully');
+    // Store metadata in Supabase (non-blocking)
+    supabase
+      .from('chat_metadata')
+      .insert(metadata)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to store chat metadata:', error);
+        }
+      });
 
+    // Extract assistant's reply
+    const assistantMessage = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+
+    // Return the response
     return NextResponse.json({
       message: assistantMessage,
-      model: modelConfig.model,
+      metadata: {
+        tokens: usage?.total_tokens,
+        cost: usage?.total_cost,
+        generationTime
+      }
     });
 
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
