@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       .single();
 
     if (girlfriendError || !girlfriend) {
+      console.error('Girlfriend fetch error:', girlfriendError);
       return NextResponse.json(
         { error: 'Girlfriend not found' },
         { status: 404 }
@@ -43,6 +44,20 @@ export async function POST(req: Request) {
       ...messages
     ];
 
+    // Build model string from model_provider and model_name
+    // Example: model_provider="openai", model_name="gpt-4o-mini" → "openai/gpt-4o-mini"
+    const modelString = girlfriend.model_name 
+      ? `${girlfriend.model_provider || 'openai'}/${girlfriend.model_name}`
+      : 'openai/gpt-4o-mini'; // Default fallback
+
+    // Log request details
+    console.log('Making OpenRouter request with:', {
+      model: modelString,
+      messageCount: apiMessages.length,
+      girlfriendId,
+      sessionId
+    });
+
     // Call OpenRouter API
     const startTime = Date.now();
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -54,24 +69,32 @@ export async function POST(req: Request) {
         'X-Title': 'AI Girlfriend Chat'
       },
       body: JSON.stringify({
-        model: girlfriend.model || 'anthropic/claude-3.5-sonnet',
+        model: modelString,
         messages: apiMessages,
         temperature: 0.8,
         max_tokens: 800
       })
     });
 
+    console.log('OpenRouter response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('OpenRouter API error:', errorData);
+      console.error('OpenRouter API error details:', errorData);
       return NextResponse.json(
-        { error: 'Failed to get response from AI' },
+        { error: `OpenRouter Error: ${JSON.stringify(errorData)}` },
         { status: response.status }
       );
     }
 
     const data = await response.json();
     const generationTime = Date.now() - startTime;
+
+    console.log('OpenRouter success:', {
+      model: data.model,
+      tokens: data.usage?.total_tokens,
+      cost: data.usage?.total_cost
+    });
 
     // Extract metadata from OpenRouter response
     const usage = data.usage;
@@ -97,6 +120,8 @@ export async function POST(req: Request) {
       .then(({ error }) => {
         if (error) {
           console.error('Failed to store chat metadata:', error);
+        } else {
+          console.log('Metadata stored successfully');
         }
       });
 
@@ -116,8 +141,10 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  }
+}
   }
 }
