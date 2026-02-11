@@ -421,6 +421,7 @@ export default function ChatInterface({ girlfriend }: ChatInterfaceProps) {
         },
         body: JSON.stringify({
           girlfriendId: girlfriend.id,
+          sessionId: sessionId, // ✅ Added sessionId here
           messages: conversationHistory,
           scenarioDescription: currentScenario?.description,
         }),
