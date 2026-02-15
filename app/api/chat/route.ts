@@ -12,7 +12,6 @@ export async function POST(req: Request) {
   try {
     const { messages, girlfriendId, sessionId } = await req.json();
 
-    // Validate required fields
     if (!messages || !girlfriendId || !sessionId) {
       return NextResponse.json(
         { error: 'Missing required fields: messages, girlfriendId, sessionId' },
@@ -20,11 +19,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Fetch girlfriend data from Supabase
+    const CONTENT_MODE = process.env.NEXT_PUBLIC_CONTENT_MODE as string;
+
     const { data: girlfriend, error: girlfriendError } = await supabase
       .from('girlfriends')
       .select('*')
       .eq('id', girlfriendId)
+      .eq('content_rating', CONTENT_MODE)
       .single();
 
     if (girlfriendError || !girlfriend) {
@@ -35,19 +36,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build system prompt with girlfriend personality
     const systemPrompt = buildSystemPrompt(girlfriend);
 
-    // Prepare messages for OpenRouter
     const apiMessages = [
       { role: 'system', content: systemPrompt },
       ...messages
     ];
 
-    // Use model_name directly - it already has the full format like "x-ai/grok-4.1-fast"
     const modelString = girlfriend.model_name || 'x-ai/grok-4.1-fast';
 
-    // Log request details
     console.log('Making OpenRouter request with:', {
       model: modelString,
       messageCount: apiMessages.length,
@@ -55,7 +52,6 @@ export async function POST(req: Request) {
       sessionId
     });
 
-    // Call OpenRouter API
     const startTime = Date.now();
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -93,7 +89,6 @@ export async function POST(req: Request) {
       cost: data.usage?.total_cost
     });
 
-    // Extract metadata from OpenRouter response
     const usage = data.usage;
     const metadata = {
       session_id: sessionId,
@@ -110,7 +105,6 @@ export async function POST(req: Request) {
       raw_metadata: data
     };
 
-    // Store metadata in Supabase (non-blocking)
     supabase
       .from('chat_metadata')
       .insert(metadata)
@@ -122,10 +116,8 @@ export async function POST(req: Request) {
         }
       });
 
-    // Extract assistant's reply
     const assistantMessage = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 
-    // Return the response
     return NextResponse.json({
       message: assistantMessage,
       metadata: {
